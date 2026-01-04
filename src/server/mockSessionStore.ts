@@ -139,7 +139,8 @@ export const joinSession = async ({
   if (existing) {
     existing.name = playerName || existing.name;
     if (typeof existing.chips !== "number") existing.chips = defaultChips;
-    return saveSession(session);
+    const saved = await saveSession(session);
+    return { session: saved, playerId: existing.id };
   }
 
   const seatNumber = session.players.length + 1;
@@ -156,7 +157,8 @@ export const joinSession = async ({
     session.currentPlayerId = newPlayer.id;
   }
 
-  return saveSession(session);
+  const saved = await saveSession(session);
+  return { session: saved, playerId: newId };
 };
 
 export const confirmSeat = async ({

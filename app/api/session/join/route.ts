@@ -11,6 +11,6 @@ export async function POST(req: Request) {
   if (!/^\d{2}$/.test(normalized)) {
     return NextResponse.json({ error: "房間號需為 2 位數" }, { status: 400 });
   }
-  const session = await joinSession({ sessionCode: normalized, playerName, playerId });
-  return NextResponse.json({ session });
+  const result = await joinSession({ sessionCode: normalized, playerName, playerId });
+  return NextResponse.json({ session: result.session, playerId: result.playerId });
 }
