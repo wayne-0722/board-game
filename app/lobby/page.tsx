@@ -92,7 +92,7 @@ export default function LobbyPage() {
             </div>
           </div>
           <div className="bg-brand-secondary/20 text-brand-accent text-sm px-3 py-2 rounded-xl">
-            現在輪到：{currentPlayer?.name ?? "待定"}
+            現在輪到：{currentPlayer?.name ?? "等待中"}
           </div>
         </div>
 
@@ -104,12 +104,12 @@ export default function LobbyPage() {
             </div>
           </div>
           <div className="p-3 rounded-xl bg-brand-secondary/20">
-            <div className="text-sm text-slate-600">我的名字</div>
+            <div className="text-sm text-slate-600">我的名稱</div>
             <input
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
-              placeholder="可選填"
+              placeholder="輸入姓名"
             />
           </div>
         </div>
