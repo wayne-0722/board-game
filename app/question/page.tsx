@@ -96,12 +96,18 @@ export default function QuestionPage() {
   }, [question, gameState, router]);
 
   useEffect(() => {
-    if (answerResult?.isCorrect) {
+    if (!answerResult) return;
+    if (answerResult.playerId && answerResult.playerId !== playerId) return;
+    if (answerResult.isCorrect) {
       setSelected(answerResult.selectedIndices);
     } else {
       setSelected([]);
     }
-  }, [answerResult]);
+  }, [answerResult, playerId]);
+
+  useEffect(() => {
+    setSelected([]);
+  }, [question?.id]);
 
   useEffect(() => {
     const tick = () => {
