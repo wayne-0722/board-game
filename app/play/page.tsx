@@ -111,7 +111,7 @@ export default function PlayPage() {
   };
 
   const handleNoQuestion = async () => {
-    await advanceTurn({ showToast: "請把回合交給下一位" });
+    await advanceTurn({ showToast: "請將回合交給下一位" });
   };
 
   return (
@@ -145,8 +145,8 @@ export default function PlayPage() {
             遊戲已結束，是否進入反思結算？
           </div>
           <div className="text-slate-600">
-            完成反思可依總回答時間與答對量排名發放籌碼（50 萬 / 25 萬 / 10 萬）。目前累積錯題{" "}
-            {reflectionCount} 題。
+            完成反思可依總回答時間與答對量排名發放獎勵（50 萬 / 25 萬 / 10
+            萬）。目前累積錯題 {reflectionCount} 題。
           </div>
           <Button onClick={() => router.push("/reflect")} className="h-14 text-xl">
             前往反思並領取獎勵
@@ -166,12 +166,13 @@ export default function PlayPage() {
               {currentQuestion.category}
             </div>
             <div className="text-sm text-slate-600">
-              回合玩家：{currentPlayer?.name ?? "等待加入"}（P{currentPlayer?.seatNumber ?? "?"}）
+              當前玩家：{currentPlayer?.name ?? "等待加入"}（P{currentPlayer?.seatNumber ?? "?"}）
             </div>
           </div>
           <h2 className="text-2xl font-bold leading-9">{currentQuestion.text}</h2>
           <div className="text-sm text-slate-600">
-            題目籌碼：{formatChips(stake)}，付費搶答會先扣題目籌碼，搶答答對由原回答者支付 1 倍，搶答答錯再扣 1 倍。
+            題目籌碼：{formatChips(stake)}，付費搶答先扣題目籌碼；搶答答對由原答錯者支付
+            1 倍，搶答答錯扣 1 倍。
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
@@ -179,7 +180,7 @@ export default function PlayPage() {
             <div className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
               {responder
                 ? `P${responder.seatNumber} ${responder.name}`
-                : "等待搶答 / 回合玩家"}
+                : "等待搶答 / 無答題者"}
             </div>
             {answerResult?.isCorrect && (
               <div className="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
@@ -191,18 +192,18 @@ export default function PlayPage() {
           {answerResult && !answerResult.isCorrect && (
             <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-4">
               <div className="font-semibold text-rose-700">
-                {lastAnswerer ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}` : "玩家"} 回答錯誤
+                {lastAnswerer ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}` : "玩家"} 答錯
               </div>
               {buzzOpen ? (
                 <>
                   <div className="text-sm text-slate-700">
                     {buzzCountdown > 0
                       ? `倒數 ${buzzCountdown} 秒內按下付費搶答（每人一次）`
-                      : "時間到，已關閉本題搶答"}
+                      : "倒數已結束，未搶答"}
                   </div>
                   {lastAnswerer?.id === playerId ? (
                     <div className="text-sm text-slate-500">
-                      你剛剛答錯，這題付費搶答輪到其他人。
+                      你剛剛答錯，無法付費搶答。
                     </div>
                   ) : isMyBuzzWinner ? (
                     <Button variant="secondary" disabled className="h-12">
@@ -210,7 +211,7 @@ export default function PlayPage() {
                     </Button>
                   ) : hasPaidBuzzed ? (
                     <div className="text-sm text-slate-500">
-                      你已用過付費搶答（每局一次）。
+                      你已使用過付費搶答（每局一次）。
                     </div>
                   ) : (
                     <Button
@@ -229,7 +230,7 @@ export default function PlayPage() {
                 </>
               ) : buzzWinnerId ? (
                 <div className="text-sm text-emerald-700">
-                  {responder ? `P${responder.seatNumber} ${responder.name}` : "玩家"} 已付費搶答，等待作答。
+                  {responder ? `P${responder.seatNumber} ${responder.name}` : "玩家"} 已付費搶答，請至題目頁作答。
                 </div>
               ) : (
                 <div className="text-sm text-slate-700">等待下一步</div>
@@ -242,12 +243,12 @@ export default function PlayPage() {
               {lastAnswerer
                 ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}`
                 : "玩家"}{" "}
-              已答對，請在題目頁面結束本回合。
+              已答對，請在題目頁結束回合。
             </div>
           )}
 
           <Button onClick={() => router.push("/question")} className="h-14 text-xl">
-            {isResponder ? "繼續作答 / 前往詳情" : "前往題目"}
+            {isResponder ? "繼續作答 / 詳情" : "前往題目"}
           </Button>
         </section>
       ) : gameState !== "TURN_ACTIVE" ? (
@@ -260,14 +261,12 @@ export default function PlayPage() {
       ) : !isTurnOwner ? (
         <section className="card p-6 space-y-4">
           <div className="text-xl font-semibold text-slate-800">現在不是你的回合，請等待。</div>
-          <p className="text-slate-600">
-            請在自己的座位提示出現後再操作。
-          </p>
+          <p className="text-slate-600">請在自己座位顯示出現在輪到。</p>
         </section>
       ) : questionLock && currentQuestion ? (
         <section className="card p-6 space-y-4">
           <div className="text-xl font-semibold text-brand-accent">
-            題目尚未完成，請先在題目頁面完成。
+            題目尚未完成，請先在題目頁完成。
           </div>
           <Button onClick={() => router.push("/question")} className="h-14 text-xl">
             前往題目 / Continue Question
@@ -275,20 +274,11 @@ export default function PlayPage() {
         </section>
       ) : (
         <section className="space-y-4">
-          <div className="text-lg font-semibold text-brand-accent">換你了！請先確認是否踩到答題格</div>
-          <Button
-            onClick={handleQuestionTile}
-            className="h-16 text-xl shadow-card"
-            disabled={!canAct}
-          >
+          <div className="text-lg font-semibold text-brand-accent">輪到你，請確認是否踩到題目。</div>
+          <Button onClick={handleQuestionTile} className="h-16 text-xl shadow-card" disabled={!canAct}>
             有踩到題目格 I stepped on Question Tile
           </Button>
-          <Button
-            variant="secondary"
-            onClick={handleNoQuestion}
-            className="h-16 text-xl"
-            disabled={!canAct}
-          >
+          <Button variant="secondary" onClick={handleNoQuestion} className="h-16 text-xl" disabled={!canAct}>
             沒有踩到 No Question Tile
           </Button>
         </section>

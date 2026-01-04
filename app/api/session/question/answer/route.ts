@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import { submitAnswer } from "../../../../../src/server/mockSessionStore";
 
 export async function POST(req: Request) {
-  const { sessionCode, selectedIndices } = await req.json();
-  if (sessionCode === undefined || selectedIndices === undefined) {
-    return NextResponse.json({ error: "Missing sessionCode or selectedIndices" }, { status: 400 });
+  const body = await req.json();
+  const { sessionCode, selectedIndices } = body ?? {};
+  if (!sessionCode || !Array.isArray(selectedIndices)) {
+    return NextResponse.json({ error: "缺少 sessionCode 或選項" }, { status: 400 });
   }
-  const result = submitAnswer({ sessionCode, selectedIndices });
-  if (result.error) {
-    return NextResponse.json({ error: result.error, session: result.session }, { status: 400 });
-  }
-  return NextResponse.json({ session: result.session });
+  const { session, error } = await submitAnswer({ sessionCode, selectedIndices });
+  return NextResponse.json({ session, error });
 }

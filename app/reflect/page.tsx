@@ -103,14 +103,6 @@ export default function ReflectPage() {
   }, [playerId, decided, hasSubmitted, wrongKey, skipped]);
 
   useEffect(() => {
-    if (!decided || skipped || hasSubmitted) return;
-    setStartTime(Date.now());
-    setNow(Date.now());
-    setQuestionDeadline(Date.now() + 15000);
-    expireHandledRef.current = false;
-  }, [decided, skipped, hasSubmitted]);
-
-  useEffect(() => {
     if (!decided || hasSubmitted || skipped || !currentQuestion) return;
     setQuestionDeadline(Date.now() + 15000);
     expireHandledRef.current = false;
@@ -139,7 +131,7 @@ export default function ReflectPage() {
   const handleNext = () => {
     if (!currentQuestion) return;
     if (answers[currentQuestion.id] === undefined || answers[currentQuestion.id] === null) {
-      showToast("請先選擇選項");
+      showToast("請先選擇答案");
       return;
     }
     if (index < questions.length - 1) {
@@ -206,9 +198,8 @@ export default function ReflectPage() {
   const hasParticipants = participantLeaderboard.length > 0;
 
   const elapsedSeconds = decided ? Math.max(0, Math.floor((now - startTime) / 1000)) : 0;
-  const questionSeconds = decided && questionDeadline
-    ? Math.max(0, Math.ceil((questionDeadline - now) / 1000))
-    : 0;
+  const questionSeconds =
+    decided && questionDeadline ? Math.max(0, Math.ceil((questionDeadline - now) / 1000)) : 0;
 
   const formatWan = (value: number) => `${Math.floor(value / 10000).toLocaleString()} 萬`;
 
@@ -220,16 +211,16 @@ export default function ReflectPage() {
       </div>
       <h1 className="text-2xl font-bold">反思測驗：前測錯題複盤</h1>
       <p className="text-slate-600">
-        題目來自前測錯題，共 {questions.length} 題，每位玩家做相同題目。開始即計時，提交後依
-        <span className="font-semibold"> 答對量、耗時 </span>
-        排名，發放 50 萬 / 25 萬 / 10 萬。
+        題目來自前測錯題，共 {questions.length} 題，每位玩家做相同題目。開始即計時，
+        交卷後依 <span className="font-semibold">答對量、耗時</span> 排名，發放 50 萬 / 25
+        萬 / 10 萬。
       </p>
 
       {!decided ? (
         <section className="card p-6 space-y-4">
           <h2 className="text-xl font-semibold">要參加反思嗎？</h2>
           <p className="text-slate-700">
-            反思使用本局的錯題。參加可依答對數、耗時排名發放獎勵；不參加則直接以籌碼數結算排名。
+            反思使用本局錯題。參加可依答對數、耗時排名發放獎勵；不參加則直接以籌碼數結算排名。
           </p>
           <div className="flex gap-3">
             <Button onClick={() => setDecided(true)}>參加反思</Button>
@@ -270,7 +261,7 @@ export default function ReflectPage() {
                 反思題
               </span>
               <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 font-semibold">
-                題目類型：
+                題目種類：
                 {currentQuestion?.type === "multi"
                   ? "複選"
                   : currentQuestion?.type === "boolean"
@@ -322,7 +313,7 @@ export default function ReflectPage() {
           <div className="text-sm text-slate-600">獎勵 50 萬 / 25 萬 / 10 萬</div>
         </div>
         {leaderboard.length === 0 ? (
-          <div className="text-slate-600">還沒有紀錄，請完成反思或直接結算。</div>
+          <div className="text-slate-600">尚無結果，請先完成反思或直接結算。</div>
         ) : (
           <div className="divide-y rounded-xl border border-slate-200 bg-white">
             {leaderboard.map((entry, idx) => {

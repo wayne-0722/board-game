@@ -37,7 +37,6 @@ const difficultyLabels: Record<string, string> = {
   hard: "難",
   易: "易",
   中低: "中低",
-  中下: "中低",
   中: "中",
   中高: "中高",
   難: "難"
@@ -52,7 +51,6 @@ const difficultyStakes: Record<string, number> = {
   hard: 700000,
   易: 100000,
   中低: 300000,
-  中下: 300000,
   中: 500000,
   中高: 600000,
   難: 700000

@@ -36,6 +36,8 @@ export default function QuestionPage() {
   const [buzzCountdown, setBuzzCountdown] = useState(0);
   const [buzzing, setBuzzing] = useState(false);
   const [buzzCountdownStarted, setBuzzCountdownStarted] = useState(false);
+  const [autoEnded, setAutoEnded] = useState(false);
+
   const isTurnOwner = Boolean(playerId && currentPlayerId && playerId === currentPlayerId);
   const isResponder = Boolean(playerId && activeResponderId && playerId === activeResponderId);
   const canAnswer = gameState === "QUESTION_ACTIVE" && isResponder;
@@ -56,10 +58,8 @@ export default function QuestionPage() {
     [players, playerId]
   );
   const formatChips = (value: number) => `${(value / 10000).toLocaleString()} 萬`;
-  const [autoEnded, setAutoEnded] = useState(false);
-  const canFinishTurn = Boolean(
-    answerResult && playerId && playerId === (answerResult.playerId || activeResponderId)
-  );
+  const isAnswerOwner = Boolean(playerId && (answerResult?.playerId ?? activeResponderId) === playerId);
+  const canFinishTurn = Boolean(answerResult && isAnswerOwner && (answerResult.isCorrect || (!buzzOpen && !buzzWinnerId)));
   const typeLabel =
     question?.type === "multi" ? "複選" : question?.type === "boolean" ? "是非" : "單選";
 
@@ -84,7 +84,7 @@ export default function QuestionPage() {
   useEffect(() => {
     if (!question && isTurnOwner && gameState === "QUESTION_ACTIVE") {
       startQuestion().catch(() => {
-        showToast("題目開始失敗，請再試一次");
+        showToast("題目取得失敗，請稍後再試");
       });
     }
   }, [question, isTurnOwner, gameState, startQuestion, showToast]);
@@ -100,8 +100,6 @@ export default function QuestionPage() {
     if (answerResult.playerId && answerResult.playerId !== playerId) return;
     if (answerResult.isCorrect) {
       setSelected(answerResult.selectedIndices);
-    } else {
-      setSelected([]);
     }
   }, [answerResult, playerId]);
 
@@ -157,9 +155,9 @@ export default function QuestionPage() {
       <main className="pt-10 space-y-4">
         <Toast />
         <div className="card p-6 space-y-3">
-          <div className="text-xl font-semibold">尚未抽到題目</div>
+          <div className="text-xl font-semibold">尚未取得題目</div>
           <p className="text-slate-600">
-            請等待並重新同步題目，或嘗試重新抽題。
+            請等待並重新同步題目，再嘗試重新取得。
           </p>
           <div className="space-y-3">
             <Button
@@ -171,7 +169,7 @@ export default function QuestionPage() {
                 await refreshSession(sessionCode);
                 if (isTurnOwner && gameState === "QUESTION_ACTIVE") {
                   await startQuestion().catch(() =>
-                    showToast("題目開始失敗，請再試一次")
+                    showToast("題目取得失敗，請稍後再試")
                   );
                 }
                 setSyncing(false);
@@ -188,15 +186,15 @@ export default function QuestionPage() {
 
   const handleSubmit = async () => {
     if (!canAnswer) {
-      showToast("只有回答者可以送出答案");
+      showToast("只有答題者可以送出答案");
       return;
     }
     if (answerResult?.isCorrect) {
-      showToast("此題已經答對，請結束回合");
+      showToast("此題已答對，請結束回合");
       return;
     }
     if (selected.length === 0) {
-      showToast("請先選擇至少一個選項");
+      showToast("請先選擇一個選項");
       return;
     }
     if (question?.type !== "multi" && selected.length > 1) {
@@ -208,7 +206,7 @@ export default function QuestionPage() {
 
   const handleFinish = async () => {
     if (!canFinishTurn) {
-      showToast(answerResult ? "請由搶答者結束回合" : "請先作答，再結束回合");
+      showToast(answerResult ? "請由答題者結束回合" : "請先作答，再結束回合");
       return;
     }
     if (answerResult?.isCorrect) {
@@ -231,7 +229,7 @@ export default function QuestionPage() {
             {question.category}
           </span>
           <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 font-semibold">
-            題目類型：{typeLabel}
+            題目種類：{typeLabel}
           </span>
           <span className="inline-flex items-center rounded-full bg-slate-100 text-slate-700 px-3 py-1 font-semibold">
             難度：{question.difficulty}
@@ -239,7 +237,7 @@ export default function QuestionPage() {
         </div>
         <h1 className="text-2xl font-bold leading-9">{question.text}</h1>
         <div className="text-sm text-slate-600">
-          題目籌碼：{formatChips(stake)}（付費搶答會先扣題目籌碼；搶答答對由原回答者支付 1 倍，搶答答錯再扣 1 倍）。
+          題目籌碼：{formatChips(stake)}（付費搶答先扣題目籌碼；搶答答對由原答錯者支付 1 倍；搶答答錯扣 1 倍）
         </div>
         <div className="text-sm text-slate-600">我的籌碼：{formatChips(myChips)}</div>
 
@@ -248,7 +246,7 @@ export default function QuestionPage() {
           <div className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
             {responder
               ? `P${responder.seatNumber} ${responder.name}`
-              : "等待搶答 / 回合玩家"}
+              : "等待搶答 / 無答題者"}
           </div>
           {buzzWinnerId && (
             <div className="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
@@ -260,18 +258,18 @@ export default function QuestionPage() {
         {answerResult && !answerResult.isCorrect && (
           <div className="space-y-2 rounded-xl border border-rose-200 bg-rose-50 p-4">
             <div className="font-semibold text-rose-700">
-              {lastAnswerer ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}` : "玩家"} 回答錯誤
+              {lastAnswerer ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}` : "玩家"} 答錯
             </div>
             {buzzOpen ? (
               <>
                 <div className="text-sm text-slate-700">
                   {buzzCountdown > 0
                     ? `倒數 ${buzzCountdown} 秒內按下付費搶答（每人一次）`
-                    : "時間到，已關閉本題搶答"}
+                    : "倒數已結束，未搶答"}
                 </div>
                 {lastAnswerer?.id === playerId ? (
                   <div className="text-sm text-slate-500">
-                    你剛剛答錯，這題付費搶答輪到其他人。
+                    你剛剛答錯，無法付費搶答。
                   </div>
                 ) : isMyBuzzWinner ? (
                   <Button variant="secondary" disabled className="h-12">
@@ -279,7 +277,7 @@ export default function QuestionPage() {
                   </Button>
                 ) : hasPaidBuzzed ? (
                   <div className="text-sm text-slate-500">
-                    你已用過付費搶答（每局一次）。
+                    你已使用過付費搶答（每局一次）。
                   </div>
                 ) : (
                   <Button
@@ -298,7 +296,7 @@ export default function QuestionPage() {
               </>
             ) : buzzWinnerId ? (
               <div className="text-sm text-emerald-700">
-                {responder ? `P${responder.seatNumber} ${responder.name}` : "玩家"} 已付費搶答，等待作答。
+                {responder ? `P${responder.seatNumber} ${responder.name}` : "玩家"} 已付費搶答，請作答。
               </div>
             ) : (
               <div className="text-sm text-slate-700">等待下一步</div>
@@ -312,7 +310,7 @@ export default function QuestionPage() {
             <div className="text-sm text-emerald-700">
               {lastAnswerer
                 ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}`
-                : "玩家"} 已答對，請按「回合結束」。
+                : "玩家"} 已答對，請結束回合。
             </div>
           </div>
         )}
@@ -347,10 +345,10 @@ export default function QuestionPage() {
 
         <div className="flex gap-3">
           <Button onClick={handleSubmit} disabled={!canAnswer} className="whitespace-nowrap">
-            {canAnswer ? "送出答案" : "等待回答者"}
+            {canAnswer ? "送出答案" : "等待答題"}
           </Button>
           <Button variant="secondary" onClick={handleFinish} disabled={!canFinishTurn}>
-            回合結束
+            結束回合
           </Button>
         </div>
       </section>

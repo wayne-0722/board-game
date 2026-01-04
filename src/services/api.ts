@@ -8,6 +8,11 @@ const jsonFetch = async <T>(
     headers: { "Content-Type": "application/json" },
     ...init
   });
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    if (!res.ok) throw new Error(`Request failed (${res.status})`);
+    throw new Error("Invalid server response");
+  }
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || "Request failed");
   return data as T;

@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { forfeitQuestion } from "../../../../../src/server/mockSessionStore";
 
 export async function POST(req: Request) {
-  const { sessionCode } = await req.json();
+  const body = await req.json();
+  const { sessionCode } = body ?? {};
   if (!sessionCode) {
-    return NextResponse.json({ error: "缺少參數" }, { status: 400 });
+    return NextResponse.json({ error: "缺少 sessionCode" }, { status: 400 });
   }
-  const result = forfeitQuestion(sessionCode);
-  return NextResponse.json({ session: result.session });
+  const { session } = await forfeitQuestion(sessionCode);
+  return NextResponse.json({ session });
 }

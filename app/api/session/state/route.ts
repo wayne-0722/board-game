@@ -7,6 +7,6 @@ export async function GET(req: Request) {
   if (!sessionCode) {
     return NextResponse.json({ error: "缺少 sessionCode" }, { status: 400 });
   }
-  const session = getState(sessionCode);
+  const session = await getState(sessionCode);
   return NextResponse.json({ session });
 }

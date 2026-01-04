@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import { startQuestion } from "../../../../../src/server/mockSessionStore";
 
 export async function POST(req: Request) {
-  const { sessionCode } = await req.json();
+  const body = await req.json();
+  const { sessionCode } = body ?? {};
   if (!sessionCode) {
     return NextResponse.json({ error: "缺少 sessionCode" }, { status: 400 });
   }
-  const result = startQuestion(sessionCode);
-  if (result.error) {
-    return NextResponse.json({ error: result.error, session: result.session }, { status: 400 });
-  }
-  return NextResponse.json({ session: result.session });
+  const { session, error } = await startQuestion(sessionCode);
+  return NextResponse.json({ session, error });
 }

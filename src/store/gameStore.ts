@@ -126,10 +126,7 @@ export const useGameStore = create<GameStore>()(
             reflectionStats: session.reflectionStats || {},
             reflectionSettled: Boolean(session.reflectionSettled),
             endVotes: session.endVotes || [],
-            endThreshold:
-              typeof (session as any).endVotes === "object" && Array.isArray((session as any).endVotes)
-                ? Math.ceil(thresholdBase / 2)
-                : get().endThreshold
+            endThreshold: Math.ceil(thresholdBase / 2)
           };
         }),
 
@@ -170,7 +167,7 @@ export const useGameStore = create<GameStore>()(
       confirmSeat: async () => {
         const { sessionCode, playerId, playerName } = get();
         if (!sessionCode) {
-          get().showToast("請先輸入局號");
+          get().showToast("請先輸入遊戲碼");
           return;
         }
         if (!playerId) {
@@ -203,7 +200,7 @@ export const useGameStore = create<GameStore>()(
           get().setFromSession(res.session);
           return res.session.currentQuestion;
         } catch (err: any) {
-          get().showToast(err.message || "題目開始失敗");
+          get().showToast(err.message || "題目取得失敗");
           return null;
         }
       },
@@ -252,7 +249,7 @@ export const useGameStore = create<GameStore>()(
         try {
           const res = await api.submitReflection(sessionCode, playerId, answers, totalTime);
           get().setFromSession(res.session);
-          get().showToast("已送出反思成績");
+          get().showToast("已送出反思答案");
         } catch (err: any) {
           get().showToast(err.message || "送出反思失敗");
           await get().refreshSession(sessionCode);
@@ -265,9 +262,9 @@ export const useGameStore = create<GameStore>()(
         try {
           const res = await api.settleReflection(sessionCode);
           get().setFromSession(res.session);
-          get().showToast("已結算完成");
+          get().showToast("已派發獎勵");
         } catch (err: any) {
-          get().showToast(err.message || "結算失敗，請稍後再試");
+          get().showToast(err.message || "派發失敗，請稍後再試");
           await get().refreshSession(sessionCode);
         }
       },
@@ -281,7 +278,7 @@ export const useGameStore = create<GameStore>()(
           const passed = res.session.gameState === "FINISHED";
           get().showToast(
             passed
-              ? "已達成結束遊戲，將進入結算"
+              ? "已達成結束門檻，將進入反思"
               : `已送出結束投票 (${res.endVotes.length}/${res.threshold})`
           );
         } catch (err: any) {
@@ -312,7 +309,7 @@ export const useGameStore = create<GameStore>()(
             get().showToast(opts.showToast);
           }
         } catch (err: any) {
-          get().showToast(err.message || "換回合失敗，請稍後再試");
+          get().showToast(err.message || "換人失敗，請稍後再試");
           await get().refreshSession(sessionCode);
         }
       },

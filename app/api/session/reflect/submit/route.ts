@@ -2,18 +2,16 @@ import { NextResponse } from "next/server";
 import { submitReflectionStats } from "../../../../../src/server/mockSessionStore";
 
 export async function POST(req: Request) {
-  const { sessionCode, playerId, answers, totalTime } = await req.json();
+  const body = await req.json();
+  const { sessionCode, playerId, answers, totalTime } = body ?? {};
   if (!sessionCode || !playerId) {
-    return NextResponse.json({ error: "缺少必要資訊" }, { status: 400 });
+    return NextResponse.json({ error: "缺少 sessionCode 或 playerId" }, { status: 400 });
   }
-  const result = submitReflectionStats({
+  const { session, error } = await submitReflectionStats({
     sessionCode,
     playerId,
     answers,
     totalTime
   });
-  if (result.error) {
-    return NextResponse.json({ error: result.error, session: result.session }, { status: 400 });
-  }
-  return NextResponse.json({ session: result.session });
+  return NextResponse.json({ session, error });
 }

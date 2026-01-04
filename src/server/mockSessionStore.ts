@@ -1,3 +1,4 @@
+import { kv } from "@vercel/kv";
 import { mockQuestions, type Question } from "../lib/questions";
 
 type Player = {
@@ -37,59 +38,89 @@ export type Session = {
   endVotes: string[];
 };
 
-// Keep sessions in a global map so dev hot-reload / serverless reuses state.
+const defaultChips = 4000000;
+const useKv = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+const sessionKey = (code: string) => `session:${code}`;
+
+// Keep in-memory fallback for local dev.
 const globalForSessions = global as unknown as { _sessions?: Map<string, Session> };
 globalForSessions._sessions = globalForSessions._sessions || new Map<string, Session>();
 const sessions: Map<string, Session> = globalForSessions._sessions;
 
-const getSession = (code: string): Session => {
-  const existing = sessions.get(code);
-  if (existing) {
-    existing.paidBuzzUsedIds = existing.paidBuzzUsedIds || [];
-    existing.lastWrongResponderId = existing.lastWrongResponderId || null;
-    existing.reflectionStats = existing.reflectionStats || {};
-    existing.reflectionSettled = existing.reflectionSettled || false;
-    existing.reflectionStartTimes = existing.reflectionStartTimes || {};
-    existing.reflectionQuestionIds = existing.reflectionQuestionIds || [];
-    existing.players = existing.players.map((p) => ({
-      ...p,
-      chips: typeof p.chips === "number" ? p.chips : 4000000
-    }));
-    return existing;
-  }
-  const fresh: Session = {
-    code,
-    players: [],
-    currentPlayerId: null,
-    gameState: "LOBBY",
-    questionLock: false,
-    usedQuestionIds: [],
-    wrongQuestionIds: [],
-    reflectionQuestionIds: [],
-    currentQuestion: null,
-    answerResult: null,
-    turnIndex: 0,
-    activeResponderId: null,
-    buzzOpen: false,
-    buzzReadyAt: null,
-    buzzWinnerId: null,
-    paidBuzzUsedIds: [],
-    lastWrongResponderId: null,
-    reflectionStats: {},
-    reflectionSettled: false,
-    reflectionStartTimes: {},
-    endVotes: []
-  };
-  sessions.set(code, fresh);
-  return fresh;
-};
-
-const saveSession = (session: Session) => {
-  sessions.set(session.code, session);
+const normalizeSession = (session: Session) => {
+  session.paidBuzzUsedIds = session.paidBuzzUsedIds || [];
+  session.lastWrongResponderId = session.lastWrongResponderId || null;
+  session.reflectionStats = session.reflectionStats || {};
+  session.reflectionSettled = session.reflectionSettled || false;
+  session.reflectionStartTimes = session.reflectionStartTimes || {};
+  session.reflectionQuestionIds = session.reflectionQuestionIds || [];
+  session.usedQuestionIds = session.usedQuestionIds || [];
+  session.wrongQuestionIds = session.wrongQuestionIds || [];
+  session.endVotes = session.endVotes || [];
+  session.players = session.players.map((p) => ({
+    ...p,
+    chips: typeof p.chips === "number" ? p.chips : defaultChips
+  }));
   return session;
 };
 
-export const joinSession = ({
+const createFreshSession = (code: string): Session => ({
+  code,
+  players: [],
+  currentPlayerId: null,
+  gameState: "LOBBY",
+  questionLock: false,
+  usedQuestionIds: [],
+  wrongQuestionIds: [],
+  reflectionQuestionIds: [],
+  currentQuestion: null,
+  answerResult: null,
+  turnIndex: 0,
+  activeResponderId: null,
+  buzzOpen: false,
+  buzzReadyAt: null,
+  buzzWinnerId: null,
+  paidBuzzUsedIds: [],
+  lastWrongResponderId: null,
+  reflectionStats: {},
+  reflectionSettled: false,
+  reflectionStartTimes: {},
+  endVotes: []
+});
+
+const getSession = async (code: string): Promise<Session> => {
+  const normalized = code.trim().toUpperCase();
+  let session: Session | null | undefined;
+  if (useKv) {
+    session = await kv.get<Session>(sessionKey(normalized));
+  } else {
+    session = sessions.get(normalized);
+  }
+  if (!session) {
+    session = createFreshSession(normalized);
+  } else {
+    session = normalizeSession(session);
+  }
+  if (useKv) {
+    await kv.set(sessionKey(normalized), session);
+  } else {
+    sessions.set(normalized, session);
+  }
+  return session;
+};
+
+const saveSession = async (session: Session) => {
+  const normalized = session.code.trim().toUpperCase();
+  session.code = normalized;
+  if (useKv) {
+    await kv.set(sessionKey(normalized), session);
+  } else {
+    sessions.set(normalized, session);
+  }
+  return session;
+};
+
+export const joinSession = async ({
   sessionCode,
   playerName,
   playerId
@@ -99,14 +130,15 @@ export const joinSession = ({
   playerId?: string;
 }) => {
   const code = sessionCode.trim().toUpperCase();
-  const session = getSession(code);
-  const existing = playerId
-    ? session.players.find((p) => p.id === playerId)
-    : undefined;
+  if (!/^\d{2}$/.test(code)) {
+    throw new Error("房間號需為 2 位數");
+  }
+  const session = await getSession(code);
+  const existing = playerId ? session.players.find((p) => p.id === playerId) : undefined;
 
   if (existing) {
     existing.name = playerName || existing.name;
-    if (typeof existing.chips !== "number") existing.chips = 4000000;
+    if (typeof existing.chips !== "number") existing.chips = defaultChips;
     return saveSession(session);
   }
 
@@ -117,7 +149,7 @@ export const joinSession = ({
     seatNumber,
     name: playerName || `玩家 ${seatNumber}`,
     confirmed: false,
-    chips: 4000000
+    chips: defaultChips
   };
   session.players.push(newPlayer);
   if (!session.currentPlayerId) {
@@ -127,7 +159,7 @@ export const joinSession = ({
   return saveSession(session);
 };
 
-export const confirmSeat = ({
+export const confirmSeat = async ({
   sessionCode,
   playerId,
   playerName
@@ -136,17 +168,15 @@ export const confirmSeat = ({
   playerId: string;
   playerName?: string;
 }) => {
-  const session = getSession(sessionCode);
+  const session = await getSession(sessionCode);
   session.players = session.players.map((p) =>
-    p.id === playerId
-      ? { ...p, confirmed: true, name: playerName || p.name }
-      : p
+    p.id === playerId ? { ...p, confirmed: true, name: playerName || p.name } : p
   );
   return saveSession(session);
 };
 
-export const startGame = (sessionCode: string) => {
-  const session = getSession(sessionCode);
+export const startGame = async (sessionCode: string) => {
+  const session = await getSession(sessionCode);
   const confirmedPlayers = session.players.filter((p) => p.confirmed);
   const order =
     (confirmedPlayers.length >= 2 ? confirmedPlayers : session.players).sort(
@@ -188,7 +218,6 @@ const getStake = (question: Question | null) => {
   const stakeByDifficulty: Record<string, number> = {
     易: 100000,
     中低: 300000,
-    中下: 300000,
     中: 500000,
     中高: 600000,
     難: 700000,
@@ -196,6 +225,7 @@ const getStake = (question: Question | null) => {
     low_medium: 300000,
     medium: 500000,
     medium_high: 600000,
+    high: 600000,
     hard: 700000
   };
   const mapped =
@@ -208,9 +238,7 @@ const getStake = (question: Question | null) => {
 };
 
 const getReflectionQuestionIds = (session: Session) =>
-  Array.from(
-    new Set(session.wrongQuestionIds.filter((id) => session.usedQuestionIds.includes(id)))
-  );
+  Array.from(new Set(session.wrongQuestionIds.filter((id) => session.usedQuestionIds.includes(id))));
 
 const resolveReflectionQuestionIds = (session: Session) => {
   if (session.reflectionQuestionIds.length > 0) {
@@ -223,17 +251,17 @@ const deductChips = (player: Player, amount: number) => {
   player.chips = Math.max(0, player.chips - amount);
 };
 
-export const startQuestion = (sessionCode: string) => {
-  const session = getSession(sessionCode);
+export const startQuestion = async (sessionCode: string) => {
+  const session = await getSession(sessionCode);
   if (session.questionLock && session.currentQuestion) {
-    return { session: saveSession(session) };
+    return { session: await saveSession(session) };
   }
   if (session.questionLock && !session.currentQuestion) {
     session.questionLock = false;
-    return { session: saveSession(session), error: "上一題尚未結束，請稍候" };
+    return { session: await saveSession(session), error: "上一題出錯，請重新開始" };
   }
 
-  // Trim wrong-question pool to only this round
+  // Trim wrong-question pool to only this round.
   session.usedQuestionIds = Array.from(new Set(session.usedQuestionIds));
   session.wrongQuestionIds = session.wrongQuestionIds.filter((id) =>
     session.usedQuestionIds.includes(id)
@@ -245,7 +273,7 @@ export const startQuestion = (sessionCode: string) => {
     session.questionLock = false;
     session.currentQuestion = null;
     session.reflectionQuestionIds = getReflectionQuestionIds(session);
-    return { session: saveSession(session), error: "題目已用完，請進入反思或結束" };
+    return { session: await saveSession(session), error: "題庫已用完，請進入反思結算" };
   }
   session.currentQuestion = question;
   session.usedQuestionIds.push(question.id);
@@ -259,20 +287,20 @@ export const startQuestion = (sessionCode: string) => {
   session.lastWrongResponderId = null;
   session.paidBuzzUsedIds = session.paidBuzzUsedIds || [];
   session.endVotes = [];
-  return { session: saveSession(session) };
+  return { session: await saveSession(session) };
 };
 
-export const submitAnswer = ({
+export const submitAnswer = async ({
   sessionCode,
   selectedIndices
 }: {
   sessionCode: string;
   selectedIndices: number[];
 }) => {
-  const session = getSession(sessionCode);
+  const session = await getSession(sessionCode);
   if (!session.currentQuestion) {
     session.questionLock = false;
-    return { session: saveSession(session), error: "尚未開始題目" };
+    return { session: await saveSession(session), error: "尚未取得題目" };
   }
   const responderId = session.activeResponderId || session.currentPlayerId || undefined;
   const expectedSet = new Set(session.currentQuestion.answerIndices);
@@ -320,19 +348,15 @@ export const submitAnswer = ({
       session.buzzReadyAt = Date.now() + 10_000;
       session.activeResponderId = null;
     } else if (session.lastWrongResponderId && session.lastWrongResponderId !== responderId) {
-      // 第二次答錯，直接進入反思階段（結束題目、下一回合）
-      const nextSession = advanceTurn(sessionCode);
+      // Second wrong (buzz) -> move to next turn and keep the question in wrong pool.
+      const nextSession = await advanceTurn(sessionCode);
       nextSession.wrongQuestionIds = Array.from(
         new Set([...nextSession.wrongQuestionIds, session.currentQuestion.id])
       );
-      return { session: saveSession(nextSession) };
+      return { session: await saveSession(nextSession) };
     }
   } else {
-    if (
-      responderId &&
-      session.lastWrongResponderId &&
-      responderId !== session.lastWrongResponderId
-    ) {
+    if (responderId && session.lastWrongResponderId && responderId !== session.lastWrongResponderId) {
       // If a buzz winner answers correctly, transfer 1x stake from the original wrong responder.
       const payer = session.players.find((p) => p.id === session.lastWrongResponderId);
       if (payer) {
@@ -346,11 +370,11 @@ export const submitAnswer = ({
     session.lastWrongResponderId = null;
     session.activeResponderId = responderId || null;
   }
-  return { session: saveSession(session) };
+  return { session: await saveSession(session) };
 };
 
-export const advanceTurn = (sessionCode: string) => {
-  const session = getSession(sessionCode);
+export const advanceTurn = async (sessionCode: string) => {
+  const session = await getSession(sessionCode);
   const confirmedPlayers = session.players.filter((p) => p.confirmed);
   const order =
     (confirmedPlayers.length >= 2 ? confirmedPlayers : session.players).sort(
@@ -374,53 +398,57 @@ export const advanceTurn = (sessionCode: string) => {
   return saveSession(session);
 };
 
-export const forfeitQuestion = (sessionCode: string) => {
-  const session = getSession(sessionCode);
+export const forfeitQuestion = async (sessionCode: string) => {
+  const session = await getSession(sessionCode);
   if (session.currentQuestion) {
     session.wrongQuestionIds = Array.from(
       new Set([...session.wrongQuestionIds, session.currentQuestion.id])
     );
   }
-  const next = advanceTurn(sessionCode);
+  const next = await advanceTurn(sessionCode);
   next.buzzOpen = false;
   next.buzzReadyAt = null;
   next.buzzWinnerId = null;
   next.lastWrongResponderId = null;
-  return { session: saveSession(next) };
+  return { session: await saveSession(next) };
 };
 
-export const buzzIn = ({
+export const buzzIn = async ({
   sessionCode,
   playerId
 }: {
   sessionCode: string;
   playerId: string;
 }) => {
-  const session = getSession(sessionCode);
+  const session = await getSession(sessionCode);
   const now = Date.now();
   const stake = getStake(session.currentQuestion);
   const buzzer = session.players.find((p) => p.id === playerId);
   if (!buzzer) {
-    return { session: saveSession(session), error: "找不到玩家" };
+    return { session: await saveSession(session), error: "找不到玩家" };
   }
   if (!session.currentQuestion || !session.buzzOpen) {
-    return { session: saveSession(session), error: "Buzz is not available" };
+    return { session: await saveSession(session), error: "Buzz is not available" };
   }
-  if (session.answerResult && session.answerResult.playerId === playerId && !session.answerResult.isCorrect) {
-    return { session: saveSession(session), error: "Previous answerer cannot buzz" };
+  if (
+    session.answerResult &&
+    session.answerResult.playerId === playerId &&
+    !session.answerResult.isCorrect
+  ) {
+    return { session: await saveSession(session), error: "Previous answerer cannot buzz" };
   }
   if (session.paidBuzzUsedIds.includes(playerId)) {
-    return { session: saveSession(session), error: "付費搶答已使用過" };
+    return { session: await saveSession(session), error: "付費搶答已使用" };
   }
   if (buzzer.chips < stake) {
-    return { session: saveSession(session), error: "籌碼不足，無法付費搶答" };
+    return { session: await saveSession(session), error: "籌碼不足，無法付費搶答" };
   }
   if (!session.buzzReadyAt || now > session.buzzReadyAt) {
     session.buzzOpen = false;
-    return { session: saveSession(session), error: "Buzz window closed" };
+    return { session: await saveSession(session), error: "Buzz window closed" };
   }
   if (session.buzzWinnerId) {
-    return { session: saveSession(session), error: "Another player already buzzed in" };
+    return { session: await saveSession(session), error: "Another player already buzzed in" };
   }
 
   session.buzzWinnerId = playerId;
@@ -428,23 +456,23 @@ export const buzzIn = ({
   session.buzzOpen = false;
   deductChips(buzzer, stake);
   session.paidBuzzUsedIds = Array.from(new Set([...(session.paidBuzzUsedIds || []), playerId]));
-  return { session: saveSession(session) };
+  return { session: await saveSession(session) };
 };
 
-export const startReflection = (sessionCode: string, playerId: string) => {
-  const session = getSession(sessionCode);
+export const startReflection = async (sessionCode: string, playerId: string) => {
+  const session = await getSession(sessionCode);
   const playerExists = session.players.some((p) => p.id === playerId);
   if (!playerExists) {
-    return { session: saveSession(session), error: "找不到玩家" };
+    return { session: await saveSession(session), error: "找不到玩家" };
   }
   session.reflectionStartTimes = session.reflectionStartTimes || {};
   if (!session.reflectionStartTimes[playerId]) {
     session.reflectionStartTimes[playerId] = Date.now();
   }
-  return { session: saveSession(session) };
+  return { session: await saveSession(session) };
 };
 
-export const submitReflectionStats = ({
+export const submitReflectionStats = async ({
   sessionCode,
   playerId,
   answers,
@@ -455,10 +483,10 @@ export const submitReflectionStats = ({
   answers: Record<string, number[]>;
   totalTime?: number;
 }) => {
-  const session = getSession(sessionCode);
+  const session = await getSession(sessionCode);
   const player = session.players.find((p) => p.id === playerId);
   if (!player) {
-    return { session: saveSession(session), error: "找不到玩家" };
+    return { session: await saveSession(session), error: "找不到玩家" };
   }
   const safeAnswers = answers || {};
   const reflectionIds = resolveReflectionQuestionIds(session);
@@ -483,11 +511,11 @@ export const submitReflectionStats = ({
     totalTime: Math.max(0, Math.round(elapsed)),
     correctCount: Math.max(0, Math.round(correctCount))
   };
-  return { session: saveSession(session) };
+  return { session: await saveSession(session) };
 };
 
-export const settleReflection = (sessionCode: string) => {
-  const session = getSession(sessionCode);
+export const settleReflection = async (sessionCode: string) => {
+  const session = await getSession(sessionCode);
   session.reflectionStats = session.reflectionStats || {};
   const prizes = [500000, 250000, 100000];
   const leaderboard = Object.entries(session.reflectionStats)
@@ -497,7 +525,7 @@ export const settleReflection = (sessionCode: string) => {
       correctCount: stats.correctCount,
       player: session.players.find((p) => p.id === pid)
     }))
-    .filter((e) => e.player)
+    .filter((entry) => entry.player)
     .sort((a, b) => {
       if (b.correctCount !== a.correctCount) return b.correctCount - a.correctCount;
       return a.totalTime - b.totalTime;
@@ -514,13 +542,13 @@ export const settleReflection = (sessionCode: string) => {
     session.reflectionSettled = true;
   }
 
-  return { session: saveSession(session), leaderboard };
+  return { session: await saveSession(session), leaderboard };
 };
 
-export const voteEndGame = (sessionCode: string, playerId: string) => {
-  const session = getSession(sessionCode);
+export const voteEndGame = async (sessionCode: string, playerId: string) => {
+  const session = await getSession(sessionCode);
   if (!session.players.some((p) => p.id === playerId)) {
-    return { session: saveSession(session), error: "玩家不存在" };
+    return { session: await saveSession(session), error: "玩家不存在" };
   }
   session.endVotes = Array.from(new Set([...(session.endVotes || []), playerId]));
   const confirmedCount = session.players.filter((p) => p.confirmed).length || 0;
@@ -537,7 +565,7 @@ export const voteEndGame = (sessionCode: string, playerId: string) => {
     }
     session.reflectionQuestionIds = getReflectionQuestionIds(session);
   }
-  return { session: saveSession(session), endVotes: session.endVotes, threshold };
+  return { session: await saveSession(session), endVotes: session.endVotes, threshold };
 };
 
-export const getState = (sessionCode: string) => getSession(sessionCode);
+export const getState = async (sessionCode: string) => getSession(sessionCode);

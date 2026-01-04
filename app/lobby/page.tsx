@@ -81,14 +81,14 @@ export default function LobbyPage() {
       <div className="text-xs font-semibold uppercase text-brand-accent tracking-wide">
         等待室 Lobby
       </div>
-      <h1 className="text-2xl font-bold">本局資訊</h1>
+      <h1 className="text-2xl font-bold">房間資訊</h1>
 
       <section className="card p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-slate-500">本局代碼</div>
+            <div className="text-sm text-slate-500">房間號</div>
             <div className="text-2xl font-bold tracking-[0.2em]">
-              {sessionCode || "------"}
+              {sessionCode || "--"}
             </div>
           </div>
           <div className="bg-brand-secondary/20 text-brand-accent text-sm px-3 py-2 rounded-xl">
@@ -99,9 +99,7 @@ export default function LobbyPage() {
         <div className="grid grid-cols-2 gap-3">
           <div className="p-3 rounded-xl bg-brand-primary/10">
             <div className="text-sm text-slate-600">我的座位</div>
-            <div className="text-3xl font-bold">
-              P{mySeat?.seatNumber ?? "-"}
-            </div>
+            <div className="text-3xl font-bold">P{mySeat?.seatNumber ?? "-"}</div>
           </div>
           <div className="p-3 rounded-xl bg-brand-secondary/20">
             <div className="text-sm text-slate-600">我的名稱</div>
@@ -109,28 +107,28 @@ export default function LobbyPage() {
               value={nameInput}
               onChange={(e) => setNameInput(e.target.value)}
               className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary"
-              placeholder="輸入姓名"
+              placeholder="輸入名稱"
             />
           </div>
         </div>
 
         <div className="space-y-3">
           <Button onClick={handleConfirm} disabled={!playerReady}>
-            {playerReady ? "確認準備" : "正在加入座位..."}
+            {playerReady ? "確認座位" : "正在加入座位..."}
           </Button>
           <Button
             variant="secondary"
             onClick={handleStart}
             disabled={confirmedCount < 2}
           >
-            開始遊戲（需 2 人確認）
+            開始遊戲（至少 2 人確認）
           </Button>
         </div>
       </section>
 
       <section className="card p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="font-semibold text-lg">目前玩家</div>
+          <div className="font-semibold text-lg">玩家列表</div>
           <div className="text-sm text-slate-500">
             已確認 {confirmedCount} 人
           </div>
