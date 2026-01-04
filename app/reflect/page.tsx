@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "../../components/ui/Button";
 import { Toast } from "../../components/Toast";
 import { useGameStore } from "../../src/store/gameStore";
@@ -11,7 +11,6 @@ type AnswerMap = Record<string, number[]>;
 
 export default function ReflectPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const sessionCode = useGameStore((s) => s.sessionCode);
   const playerId = useGameStore((s) => s.playerId);
   const players = useGameStore((s) => s.players);
@@ -61,11 +60,13 @@ export default function ReflectPage() {
   }, [hasSubmitted]);
 
   useEffect(() => {
-    if (searchParams?.get("skip") === "1") {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("skip") === "1") {
       setDecided(true);
       setSkipped(true);
     }
-  }, [searchParams]);
+  }, []);
 
   useEffect(() => {
     if (!decided || hasSubmitted || skipped) return;
