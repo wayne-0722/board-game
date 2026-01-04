@@ -53,7 +53,7 @@ const getSession = (code: string): Session => {
     existing.reflectionQuestionIds = existing.reflectionQuestionIds || [];
     existing.players = existing.players.map((p) => ({
       ...p,
-      chips: typeof p.chips === "number" ? p.chips : 24000000
+      chips: typeof p.chips === "number" ? p.chips : 4000000
     }));
     return existing;
   }
@@ -106,7 +106,7 @@ export const joinSession = ({
 
   if (existing) {
     existing.name = playerName || existing.name;
-    if (typeof existing.chips !== "number") existing.chips = 24000000;
+    if (typeof existing.chips !== "number") existing.chips = 4000000;
     return saveSession(session);
   }
 
@@ -117,7 +117,7 @@ export const joinSession = ({
     seatNumber,
     name: playerName || `玩家 ${seatNumber}`,
     confirmed: false,
-    chips: 24000000
+    chips: 4000000
   };
   session.players.push(newPlayer);
   if (!session.currentPlayerId) {

@@ -41,6 +41,7 @@ export default function QuestionPage() {
   const canAnswer = gameState === "QUESTION_ACTIVE" && isResponder;
   const buzzReady = buzzOpen && buzzReadyAt !== null && buzzCountdown > 0 && !buzzWinnerId;
   const hasPaidBuzzed = Boolean(playerId && paidBuzzUsedIds?.includes(playerId));
+  const isMyBuzzWinner = Boolean(playerId && buzzWinnerId === playerId);
   const responder = useMemo(
     () => players.find((p) => p.id === activeResponderId) || null,
     [players, activeResponderId]
@@ -56,7 +57,9 @@ export default function QuestionPage() {
   );
   const formatChips = (value: number) => `${(value / 10000).toLocaleString()} 萬`;
   const [autoEnded, setAutoEnded] = useState(false);
-  const canFinishTurn = Boolean(playerId && playerId === (answerResult?.playerId || activeResponderId));
+  const canFinishTurn = Boolean(
+    answerResult && playerId && playerId === (answerResult.playerId || activeResponderId)
+  );
   const typeLabel =
     question?.type === "multi" ? "複選" : question?.type === "boolean" ? "是非" : "單選";
 
@@ -199,7 +202,7 @@ export default function QuestionPage() {
 
   const handleFinish = async () => {
     if (!canFinishTurn) {
-      showToast("請由搶答者結束回合");
+      showToast(answerResult ? "請由搶答者結束回合" : "請先作答，再結束回合");
       return;
     }
     if (answerResult?.isCorrect) {
@@ -264,6 +267,10 @@ export default function QuestionPage() {
                   <div className="text-sm text-slate-500">
                     你剛剛答錯，這題付費搶答輪到其他人。
                   </div>
+                ) : isMyBuzzWinner ? (
+                  <Button variant="secondary" disabled className="h-12">
+                    已搶答
+                  </Button>
                 ) : hasPaidBuzzed ? (
                   <div className="text-sm text-slate-500">
                     你已用過付費搶答（每局一次）。
@@ -276,7 +283,7 @@ export default function QuestionPage() {
                       await buzzIn();
                       setBuzzing(false);
                     }}
-                    disabled={!buzzReady || !!buzzWinnerId || buzzing || hasPaidBuzzed}
+                    disabled={!buzzReady || !!buzzWinnerId || buzzing || hasPaidBuzzed || isMyBuzzWinner}
                     className="h-12"
                   >
                     {buzzCountdown > 0 ? `搶答 (${buzzCountdown}s)` : "搶答已結束"}

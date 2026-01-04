@@ -96,6 +96,7 @@ export default function PlayPage() {
   const confirmedCount = players.filter((p) => p.confirmed).length;
   const endThreshold = Math.ceil(Math.max(1, confirmedCount > 0 ? confirmedCount : players.length) / 2);
   const hasPaidBuzzed = Boolean(playerId && paidBuzzUsedIds?.includes(playerId));
+  const isMyBuzzWinner = Boolean(playerId && buzzWinnerId === playerId);
   const hasEndVoted = Boolean(playerId && endVotes?.includes(playerId));
   const endVotesCount = endVotes?.length ?? 0;
   const formatChips = (value: number) => `${(value / 10000).toLocaleString()} 萬`;
@@ -203,6 +204,10 @@ export default function PlayPage() {
                     <div className="text-sm text-slate-500">
                       你剛剛答錯，這題付費搶答輪到其他人。
                     </div>
+                  ) : isMyBuzzWinner ? (
+                    <Button variant="secondary" disabled className="h-12">
+                      已搶答
+                    </Button>
                   ) : hasPaidBuzzed ? (
                     <div className="text-sm text-slate-500">
                       你已用過付費搶答（每局一次）。
@@ -215,7 +220,7 @@ export default function PlayPage() {
                         await buzzIn();
                         setBuzzing(false);
                       }}
-                      disabled={!buzzReady || !!buzzWinnerId || buzzing || hasPaidBuzzed}
+                      disabled={!buzzReady || !!buzzWinnerId || buzzing || hasPaidBuzzed || isMyBuzzWinner}
                       className="h-12"
                     >
                       {buzzCountdown > 0 ? `搶答 (${buzzCountdown}s)` : "搶答已結束"}
