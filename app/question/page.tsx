@@ -73,13 +73,17 @@ export default function QuestionPage() {
       const state = useGameStore.getState();
       const exists = state.players.some((p) => p.id === state.playerId);
       if (!exists) {
-        await joinSession(sessionCode, state.playerName);
+        if (state.gameState === "LOBBY") {
+          await joinSession(sessionCode, state.playerName);
+        } else {
+          showToast("���a��Ƥ��P�B�A�Ъ�^�������s�[�J�C");
+        }
       }
     };
     sync();
     const id = setInterval(sync, 2000);
     return () => clearInterval(id);
-  }, [sessionCode, refreshSession, joinSession, router]);
+  }, [sessionCode, refreshSession, joinSession, router, showToast]);
 
   useEffect(() => {
     if (!question && isTurnOwner && gameState === "QUESTION_ACTIVE") {
@@ -89,11 +93,23 @@ export default function QuestionPage() {
     }
   }, [question, isTurnOwner, gameState, startQuestion, showToast]);
 
-  useEffect(() => {
-    if (!question && gameState !== "QUESTION_ACTIVE") {
-      router.replace("/play");
-    }
-  }, [question, gameState, router]);
+useEffect(() => {
+  if (gameState === "LOBBY") {
+    router.replace("/lobby");
+    return;
+  }
+  if (gameState === "TURN_ACTIVE") {
+    router.replace("/play");
+    return;
+  }
+  if (gameState === "FINISHED") {
+    router.replace("/reflect");
+    return;
+  }
+  if (!question && gameState !== "QUESTION_ACTIVE") {
+    router.replace("/play");
+  }
+}, [question, gameState, router]);
 
   useEffect(() => {
     if (!answerResult) return;
@@ -186,19 +202,19 @@ export default function QuestionPage() {
 
   const handleSubmit = async () => {
     if (!canAnswer) {
-      showToast("只有答題者可以送出答案");
+      showToast("�u�����D�̥i�H�e�X���סC");
       return;
     }
     if (answerResult?.isCorrect) {
-      showToast("此題已答對，請結束回合");
+      showToast("���D�w����A�Ы������^�X�C");
       return;
     }
     if (selected.length === 0) {
-      showToast("請先選擇一個選項");
+      showToast("�Х���ܿﶵ�C");
       return;
     }
     if (question?.type !== "multi" && selected.length > 1) {
-      showToast("此題為單選，請只選一個選項");
+      showToast("���D�����A�Хu��@�ӿﶵ�C");
       return;
     }
     await submitAnswer(selected);

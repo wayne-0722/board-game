@@ -1,0 +1,277 @@
+﻿# Project Summary (Full Spec + All Required Sections)
+
+This document includes: State Machine, Sequence Diagrams (Join/Answer/Buzz/Reflection), ERD proposal, Env/Deploy checklist, API schemas, Error handling, Performance/Scalability, Test checklist, Security, UX improvements, and Changelog.
+
+==================================================
+1. State Machine (GameState)
+==================================================
+LOBBY -> TURN_ACTIVE -> QUESTION_ACTIVE -> FINISHED
+- LOBBY: waiting for confirmed players
+- TURN_ACTIVE: current player decides to draw / skip question
+- QUESTION_ACTIVE: active question in progress
+- FINISHED: end-of-game, reflection/settlement
+
+Mermaid (State Machine)
+```mermaid
+stateDiagram-v2
+  [*] --> LOBBY
+  LOBBY --> TURN_ACTIVE: startGame (>=2 confirmed)
+  TURN_ACTIVE --> QUESTION_ACTIVE: startQuestion
+  TURN_ACTIVE --> TURN_ACTIVE: advanceTurn (no question)
+  QUESTION_ACTIVE --> TURN_ACTIVE: endTurn / forfeit
+  QUESTION_ACTIVE --> FINISHED: questionBankExhausted
+  TURN_ACTIVE --> FINISHED: endVoteReached
+```
+
+==================================================
+2. Sequence Diagrams (API Time Sequence)
+==================================================
+2.1 Join Flow
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+
+  UI->>API: POST /api/session/join
+  API->>Session: create/get session + add player
+  Session-->>API: session
+  API-->>UI: session + playerId
+```
+
+2.2 Answer Flow
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+
+  UI->>API: POST /api/session/question/start
+  API->>Session: pick question
+  API-->>UI: currentQuestion
+
+  UI->>API: POST /api/session/question/answer
+  API->>Session: score, update answerResult
+  API-->>UI: session
+
+  UI->>API: POST /api/session/advance (end turn)
+  API->>Session: move to next player
+  API-->>UI: session
+```
+
+2.3 Buzz Flow
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+
+  UI->>API: POST /api/session/question/buzz
+  API->>Session: validate + deduct stake + set responder
+  API-->>UI: session
+
+  UI->>API: POST /api/session/question/answer
+  API->>Session: score/transfer stake
+  API-->>UI: session
+```
+
+2.4 Reflection Flow
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+
+  UI->>API: POST /api/session/reflect/start
+  API->>Session: set reflectionStartTime
+  API-->>UI: session
+
+  UI->>API: POST /api/session/reflect/submit
+  API->>Session: compute correctCount + totalTime
+  API-->>UI: session
+
+  UI->>API: POST /api/session/reflect/settle
+  API->>Session: ranking + rewards
+  API-->>UI: session + leaderboard
+```
+
+==================================================
+3. ERD / Data Schema (Postgres/MySQL Proposal)
+==================================================
+Tables:
+- sessions
+  - id (PK), code, game_state, current_player_id, active_responder_id,
+    question_lock, current_question_id, created_at, updated_at
+- players
+  - id (PK), session_id (FK), seat_number, name, confirmed, chips
+- questions
+  - id (PK), category, type, difficulty, text, options(JSON), answer_indices(JSON), explanation
+- session_questions
+  - id (PK), session_id (FK), question_id (FK), status(used/wrong/reflection)
+- answers
+  - id (PK), session_id (FK), question_id (FK), player_id (FK), selected_indices(JSON), is_correct
+- buzz
+  - id (PK), session_id (FK), question_id (FK), player_id (FK), created_at
+- reflection_stats
+  - id (PK), session_id (FK), player_id (FK), correct_count, total_time
+- end_votes
+  - id (PK), session_id (FK), player_id (FK), created_at
+
+==================================================
+4. Env Vars & Deployment Checklist (Vercel KV)
+==================================================
+- KV_REST_API_URL
+- KV_REST_API_TOKEN
+- KV_REST_API_READ_ONLY_TOKEN
+
+Steps:
+1) Create KV (Redis) on Vercel
+2) Bind KV to project
+3) Confirm env vars added
+4) Deploy
+
+==================================================
+5. API Specs (Request/Response Schema)
+==================================================
+- POST /api/session/join
+  Request: { sessionCode, playerName?, playerId? }
+  Response: { session, playerId }
+
+- POST /api/session/confirm
+  Request: { sessionCode, playerId, playerName? }
+  Response: { session }
+
+- POST /api/session/start
+  Request: { sessionCode }
+  Response: { session }
+
+- POST /api/session/advance
+  Request: { sessionCode }
+  Response: { session }
+
+- POST /api/session/question/start
+  Request: { sessionCode }
+  Response: { session, error? }
+
+- POST /api/session/question/answer
+  Request: { sessionCode, selectedIndices[] }
+  Response: { session, error? }
+
+- POST /api/session/question/buzz
+  Request: { sessionCode, playerId }
+  Response: { session, error? }
+
+- POST /api/session/question/forfeit
+  Request: { sessionCode }
+  Response: { session }
+
+- POST /api/session/reflect/start
+  Request: { sessionCode, playerId }
+  Response: { session, error? }
+
+- POST /api/session/reflect/submit
+  Request: { sessionCode, playerId, answers, totalTime? }
+  Response: { session, error? }
+
+- POST /api/session/reflect/settle
+  Request: { sessionCode }
+  Response: { session, leaderboard }
+
+- POST /api/session/end
+  Request: { sessionCode, playerId }
+  Response: { session, endVotes, threshold, error? }
+
+- GET /api/session/state?sessionCode=xx
+  Response: { session }
+
+==================================================
+6. Error Codes & Retry Policy
+==================================================
+- 400: missing or invalid parameters
+- 404: session/player not found (if added later)
+- 409: invalid state transition (optional)
+- 500: server error
+
+Retry Strategy:
+- UI polls refreshSession every 2s
+- On error -> showToast + refreshSession
+
+==================================================
+7. Performance & Scalability
+==================================================
+- Use KV for shared state across serverless instances
+- Consider Session TTL (e.g., 6h) in KV
+- Cache question bank in memory
+- Reduce polling to 3-5s if needed
+- Add batching for API calls if traffic grows
+
+==================================================
+8. Test Checklist
+==================================================
+- Join room (2-digit validation)
+- Seat confirmation
+- Start game with >=2 confirmed
+- Draw question / skip question
+- Answer correct / wrong
+- Buzz within 10s
+- Buzz wrong / correct
+- End vote -> FINISHED
+- Reflection participate/skip
+- Ranking & reward distribution
+
+==================================================
+9. Security Suggestions
+==================================================
+- Rate limit API routes
+- Validate room code on server
+- Prevent original wrong responder from buzz
+- Deduct chips cannot go below 0
+- Verify playerId belongs to session
+
+==================================================
+10. UX Improvements
+==================================================
+- Show explicit status banner for answer correctness
+- Clear button states during buzz window
+- Auto scroll to current question
+- Provide countdown emphasis for buzz/reflect
+
+==================================================
+11. Changelog / Release Notes
+==================================================
+- v1.0: Base game loop + question flow
+- v1.1: Paid buzz, reflection ranking
+- v1.2: Vercel KV persistence + API stability
+- v1.3: Room code to 2 digits + UI cleanup
+
+==================================================
+12. Flowchart (Mermaid)
+==================================================
+```mermaid
+flowchart TD
+  A[Join Room] --> B[Lobby]
+  B --> C[Confirm Seat]
+  C --> D{>=2 Confirmed}
+  D --No--> B
+  D --Yes--> E[Start Game]
+  E --> F[Turn Active]
+  F --> G{Step on Question?}
+  G --No--> H[Advance Turn]
+  G --Yes--> I[Start Question]
+  I --> J[Answer]
+  J --Correct--> K[Add Score]
+  J --Wrong--> L[Open Buzz]
+  L --> M{Buzz?}
+  M --No--> N[Forfeit]
+  M --Yes--> O[Buzz Answer]
+  O --Correct--> P[Transfer Stake]
+  O --Wrong--> Q[Wrong Pool]
+  K --> H
+  N --> H
+  P --> H
+  Q --> H
+  F --> R{End Condition}
+  R --Yes--> S[Reflection]
+  R --No--> F
+  S --> T[Ranking/Rewards]
+```

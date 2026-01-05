@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -19,6 +19,7 @@ export default function PlayPage() {
   const sessionCode = useGameStore((s) => s.sessionCode);
   const refreshSession = useGameStore((s) => s.refreshSession);
   const joinSession = useGameStore((s) => s.joinSession);
+  const showToast = useGameStore((s) => s.showToast);
   const gameState = useGameStore((s) => s.gameState);
   const wrongQuestionIds = useGameStore((s) => s.wrongQuestionIds);
   const reflectionQuestionIds = useGameStore((s) => s.reflectionQuestionIds);
@@ -45,15 +46,27 @@ export default function PlayPage() {
       const state = useGameStore.getState();
       const exists = state.players.some((p) => p.id === state.playerId);
       if (!exists) {
-        await joinSession(sessionCode, state.playerName);
+        if (state.gameState === "LOBBY") {
+          await joinSession(sessionCode, state.playerName);
+        } else {
+          showToast("玩家資料不同步，請返回首頁重新加入。");
+        }
       }
     };
     sync();
     const id = setInterval(sync, 2000);
     return () => clearInterval(id);
-  }, [sessionCode, refreshSession, joinSession, router]);
+  }, [sessionCode, refreshSession, joinSession, router, showToast]);
 
   useEffect(() => {
+    if (gameState === "LOBBY") {
+      router.replace("/lobby");
+      return;
+    }
+    if (gameState === "QUESTION_ACTIVE") {
+      router.replace("/question");
+      return;
+    }
     if (gameState === "FINISHED") {
       router.replace("/reflect");
     }
@@ -94,7 +107,9 @@ export default function PlayPage() {
   const buzzReady = buzzOpen && buzzReadyAt !== null && buzzCountdown > 0 && !buzzWinnerId;
   const myChips = players.find((p) => p.id === playerId)?.chips ?? 0;
   const confirmedCount = players.filter((p) => p.confirmed).length;
-  const endThreshold = Math.ceil(Math.max(1, confirmedCount > 0 ? confirmedCount : players.length) / 2);
+  const endThreshold = Math.ceil(
+    Math.max(1, confirmedCount > 0 ? confirmedCount : players.length) / 2
+  );
   const hasPaidBuzzed = Boolean(playerId && paidBuzzUsedIds?.includes(playerId));
   const isMyBuzzWinner = Boolean(playerId && buzzWinnerId === playerId);
   const hasEndVoted = Boolean(playerId && endVotes?.includes(playerId));
@@ -111,7 +126,7 @@ export default function PlayPage() {
   };
 
   const handleNoQuestion = async () => {
-    await advanceTurn({ showToast: "請將回合交給下一位" });
+    await advanceTurn({ showToast: "題庫已用完，請進入反思結算。" });
   };
 
   return (
@@ -131,11 +146,13 @@ export default function PlayPage() {
               {connectionStatus}
             </div>
           </div>
-          <div className="text-3xl font-bold">
+          <div className="text-2xl font-bold">
             {currentPlayer?.name ?? "等待加入"}（P{currentPlayer?.seatNumber ?? "?"}）
           </div>
-          <div className="text-sm text-slate-600">題目籌碼：{formatChips(stake)}</div>
-          <div className="text-sm text-slate-600">我的籌碼：{formatChips(myChips)}</div>
+          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+            <div>題目籌碼：{formatChips(stake)}</div>
+            <div>我的籌碼：{formatChips(myChips)}</div>
+          </div>
         </header>
       )}
 
@@ -145,8 +162,8 @@ export default function PlayPage() {
             遊戲已結束，是否進入反思結算？
           </div>
           <div className="text-slate-600">
-            完成反思可依總回答時間與答對量排名發放獎勵（50 萬 / 25 萬 / 10
-            萬）。目前累積錯題 {reflectionCount} 題。
+            完成反思可依總回答時間與答對量排名發放獎勵（50 萬 / 25 萬 / 10 萬）。目前累積錯題
+            {reflectionCount} 題。
           </div>
           <Button onClick={() => router.push("/reflect")} className="h-14 text-xl">
             前往反思並領取獎勵
@@ -171,16 +188,13 @@ export default function PlayPage() {
           </div>
           <h2 className="text-2xl font-bold leading-9">{currentQuestion.text}</h2>
           <div className="text-sm text-slate-600">
-            題目籌碼：{formatChips(stake)}，付費搶答先扣題目籌碼；搶答答對由原答錯者支付
-            1 倍，搶答答錯扣 1 倍。
+            題目籌碼：{formatChips(stake)}，付費搶答會先扣題目籌碼；搶答答對由原答錯者支付題目籌碼，搶答答錯扣 2 倍。
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
             <div className="font-semibold text-brand-accent">答題者</div>
             <div className="rounded-full bg-slate-100 px-3 py-1 font-semibold">
-              {responder
-                ? `P${responder.seatNumber} ${responder.name}`
-                : "等待搶答 / 無答題者"}
+              {responder ? `P${responder.seatNumber} ${responder.name}` : "等待搶答 / 尚未回答"}
             </div>
             {answerResult?.isCorrect && (
               <div className="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
@@ -198,21 +212,17 @@ export default function PlayPage() {
                 <>
                   <div className="text-sm text-slate-700">
                     {buzzCountdown > 0
-                      ? `倒數 ${buzzCountdown} 秒內按下付費搶答（每人一次）`
-                      : "倒數已結束，未搶答"}
+                      ? `倒數 ${buzzCountdown} 秒內可付費搶答（每人一次）`
+                      : "倒數已結束，無人搶答"}
                   </div>
                   {lastAnswerer?.id === playerId ? (
-                    <div className="text-sm text-slate-500">
-                      你剛剛答錯，無法付費搶答。
-                    </div>
+                    <div className="text-sm text-slate-500">你剛答錯，不能付費搶答。</div>
                   ) : isMyBuzzWinner ? (
                     <Button variant="secondary" disabled className="h-12">
                       已搶答
                     </Button>
                   ) : hasPaidBuzzed ? (
-                    <div className="text-sm text-slate-500">
-                      你已使用過付費搶答（每局一次）。
-                    </div>
+                    <div className="text-sm text-slate-500">你已使用付費搶答（每局一次）。</div>
                   ) : (
                     <Button
                       variant="secondary"
@@ -233,40 +243,35 @@ export default function PlayPage() {
                   {responder ? `P${responder.seatNumber} ${responder.name}` : "玩家"} 已付費搶答，請至題目頁作答。
                 </div>
               ) : (
-                <div className="text-sm text-slate-700">等待下一步</div>
+                <div className="text-sm text-slate-700">等待下一步。</div>
               )}
             </div>
           )}
 
           {answerResult?.isCorrect && (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
-              {lastAnswerer
-                ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}`
-                : "玩家"}{" "}
-              已答對，請在題目頁結束回合。
+              {lastAnswerer ? `P${lastAnswerer.seatNumber} ${lastAnswerer.name}` : "玩家"} 已答對，請在題目頁完成回合。
             </div>
           )}
 
           <Button onClick={() => router.push("/question")} className="h-14 text-xl">
-            {isResponder ? "繼續作答 / 詳情" : "前往題目"}
+            {isResponder ? "繼續作答 / 詳細" : "前往題目"}
           </Button>
         </section>
       ) : gameState !== "TURN_ACTIVE" ? (
         <section className="card p-6 space-y-4">
           <div className="text-xl font-semibold text-slate-800">等待遊戲開始或重新同步。</div>
-          <p className="text-slate-600">
-            確認等待室至少 2 人座位已確認，並請主持人按開始遊戲。
-          </p>
+          <p className="text-slate-600">確認至少 2 人座位已確認，並請主持人按開始遊戲。</p>
         </section>
       ) : !isTurnOwner ? (
         <section className="card p-6 space-y-4">
-          <div className="text-xl font-semibold text-slate-800">現在不是你的回合，請等待。</div>
-          <p className="text-slate-600">請在自己座位顯示出現在輪到。</p>
+          <div className="text-xl font-semibold text-slate-800">現在不是你的回合，請稍候。</div>
+          <p className="text-slate-600">請等待主持人或當前玩家抽題。</p>
         </section>
       ) : questionLock && currentQuestion ? (
         <section className="card p-6 space-y-4">
           <div className="text-xl font-semibold text-brand-accent">
-            題目尚未完成，請先在題目頁完成。
+            題目尚未完成，請前往題目頁作答。
           </div>
           <Button onClick={() => router.push("/question")} className="h-14 text-xl">
             前往題目 / Continue Question
@@ -274,12 +279,12 @@ export default function PlayPage() {
         </section>
       ) : (
         <section className="space-y-4">
-          <div className="text-lg font-semibold text-brand-accent">輪到你，請確認是否踩到題目。</div>
+          <div className="text-lg font-semibold text-brand-accent">輪到你了，請選擇是否踩中題目格。</div>
           <Button onClick={handleQuestionTile} className="h-16 text-xl shadow-card" disabled={!canAct}>
-            有踩到題目格 I stepped on Question Tile
+            踩中題目格 / I stepped on Question Tile
           </Button>
           <Button variant="secondary" onClick={handleNoQuestion} className="h-16 text-xl" disabled={!canAct}>
-            沒有踩到 No Question Tile
+            沒踩中 / No Question Tile
           </Button>
         </section>
       )}
@@ -294,7 +299,7 @@ export default function PlayPage() {
           onClick={() => voteEndGame()}
           disabled={gameState === "FINISHED"}
         >
-          {gameState === "FINISHED" ? "已結束" : hasEndVoted ? "已投票" : "同意結束遊戲"}
+          {gameState === "FINISHED" ? "已結束" : hasEndVoted ? "已同意" : "同意結束遊戲"}
         </Button>
       </section>
     </main>

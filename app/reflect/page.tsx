@@ -84,13 +84,17 @@ export default function ReflectPage() {
       const state = useGameStore.getState();
       const exists = state.players.some((p) => p.id === state.playerId);
       if (!exists) {
-        await joinSession(sessionCode, state.playerName);
+        if (state.gameState === "LOBBY") {
+          await joinSession(sessionCode, state.playerName);
+        } else {
+          showToast("玩家資料不同步，請返回首頁重新加入。");
+        }
       }
     };
     sync();
     const id = setInterval(sync, 2000);
     return () => clearInterval(id);
-  }, [sessionCode, refreshSession, joinSession, router]);
+  }, [sessionCode, refreshSession, joinSession, router, showToast]);
 
   useEffect(() => {
     if (!decided || hasSubmitted || skipped) return;

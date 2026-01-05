@@ -1,0 +1,248 @@
+﻿# 專案總整理（中文版完整版）
+
+本文件已包含以下指定內容：
+- 狀態機圖（State Machine）
+- 時序圖（Join/Answer/Buzz/Reflection）
+- ERD / 資料表設計
+- 環境變數與部署清單
+- API 規格（Request/Response）
+- 錯誤碼與處理策略
+- 效能與擴展性建議
+- 測試清單
+- 安全性建議
+- UX 改善清單
+- 版本紀錄
+
+==================================================
+一、狀態機圖（State Machine）
+==================================================
+LOBBY → TURN_ACTIVE → QUESTION_ACTIVE → FINISHED
+
+Mermaid：
+```mermaid
+stateDiagram-v2
+  [*] --> LOBBY
+  LOBBY --> TURN_ACTIVE: startGame (>=2 confirmed)
+  TURN_ACTIVE --> QUESTION_ACTIVE: startQuestion
+  TURN_ACTIVE --> TURN_ACTIVE: advanceTurn
+  QUESTION_ACTIVE --> TURN_ACTIVE: endTurn / forfeit
+  QUESTION_ACTIVE --> FINISHED: questionBankExhausted
+  TURN_ACTIVE --> FINISHED: endVoteReached
+```
+
+==================================================
+二、時序圖（Sequence Diagram）
+==================================================
+Join
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+  UI->>API: joinSession
+  API->>Session: create/get + add player
+  API-->>UI: session + playerId
+```
+
+Answer
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+  UI->>API: startQuestion
+  API-->>UI: question
+  UI->>API: submitAnswer
+  API->>Session: score/update
+  API-->>UI: session
+```
+
+Buzz
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+  UI->>API: buzzIn
+  API->>Session: validate + deduct + assign responder
+  API-->>UI: session
+```
+
+Reflection
+```mermaid
+sequenceDiagram
+  participant UI
+  participant API
+  participant Session
+  UI->>API: startReflection
+  API->>Session: start timer
+  API-->>UI: session
+  UI->>API: submitReflection
+  API->>Session: calc correct/time
+  API-->>UI: session
+```
+
+==================================================
+三、ERD / 資料表設計
+==================================================
+- sessions
+  - id, code, game_state, current_player_id, active_responder_id, question_lock, current_question_id, created_at, updated_at
+- players
+  - id, session_id, seat_number, name, confirmed, chips
+- questions
+  - id, category, type, difficulty, text, options(JSON), answer_indices(JSON)
+- session_questions
+  - id, session_id, question_id, status(used/wrong/reflection)
+- answers
+  - id, session_id, question_id, player_id, selected_indices(JSON), is_correct
+- buzz
+  - id, session_id, question_id, player_id, created_at
+- reflection_stats
+  - id, session_id, player_id, correct_count, total_time
+- end_votes
+  - id, session_id, player_id, created_at
+
+==================================================
+四、環境變數與部署清單
+==================================================
+Vercel KV (Redis) 需要：
+- KV_REST_API_URL
+- KV_REST_API_TOKEN
+- KV_REST_API_READ_ONLY_TOKEN
+
+步驟：
+1) Vercel 建立 KV
+2) 綁定專案
+3) 自動加入 env vars
+4) 重新部署
+
+==================================================
+五、API 規格（Request/Response）
+==================================================
+- /api/session/join
+  Req: { sessionCode, playerName?, playerId? }
+  Res: { session, playerId }
+
+- /api/session/confirm
+  Req: { sessionCode, playerId, playerName? }
+  Res: { session }
+
+- /api/session/start
+  Req: { sessionCode }
+  Res: { session }
+
+- /api/session/advance
+  Req: { sessionCode }
+  Res: { session }
+
+- /api/session/question/start
+  Req: { sessionCode }
+  Res: { session, error? }
+
+- /api/session/question/answer
+  Req: { sessionCode, selectedIndices[] }
+  Res: { session, error? }
+
+- /api/session/question/buzz
+  Req: { sessionCode, playerId }
+  Res: { session, error? }
+
+- /api/session/question/forfeit
+  Req: { sessionCode }
+  Res: { session }
+
+- /api/session/reflect/start
+  Req: { sessionCode, playerId }
+  Res: { session, error? }
+
+- /api/session/reflect/submit
+  Req: { sessionCode, playerId, answers, totalTime? }
+  Res: { session, error? }
+
+- /api/session/reflect/settle
+  Req: { sessionCode }
+  Res: { session, leaderboard }
+
+- /api/session/end
+  Req: { sessionCode, playerId }
+  Res: { session, endVotes, threshold }
+
+- /api/session/state
+  Res: { session }
+
+==================================================
+六、錯誤碼與處理策略
+==================================================
+- 400: 參數缺失/格式錯誤
+- 500: 伺服器錯誤
+- Retry: UI 每 2 秒 refreshSession
+
+==================================================
+七、效能與擴展性建議
+==================================================
+- KV Session TTL（例如 6 小時）
+- 題庫快取
+- 降低 polling 頻率
+- 未來改 DB 可用 transaction
+
+==================================================
+八、測試清單
+==================================================
+- 房間加入（2 位數）
+- 座位確認
+- 開始遊戲
+- 題目作答（正確/錯誤）
+- 付費搶答
+- 結束投票
+- 反思測驗
+- 排名與獎勵
+
+==================================================
+九、安全性建議
+==================================================
+- Rate limit
+- 驗證 sessionCode
+- 防止同一玩家多次搶答
+- chips 不可小於 0
+
+==================================================
+十、可用性 / UX 改善
+==================================================
+- 明顯提示答對/答錯
+- 強化倒數
+- 避免按鈕重置
+- 補充進度提示
+
+==================================================
+十一、版本紀錄
+==================================================
+- v1.0 基本遊戲流程
+- v1.1 搶答與反思
+- v1.2 Vercel KV
+- v1.3 2 位數房間號
+
+==================================================
+十二、流程圖 (Mermaid)
+==================================================
+```mermaid
+flowchart TD
+  A[輸入房間號] --> B[joinSession]
+  B --> C[等待室]
+  C --> D[confirmSeat]
+  D --> E{>=2?}
+  E --否--> C
+  E --是--> F[startGame]
+  F --> G[回合流程]
+  G --> H{踩到題目?}
+  H --否--> I[advanceTurn]
+  H --是--> J[startQuestion]
+  J --> K[QUESTION_ACTIVE]
+  K --> L[submitAnswer]
+  L --答對--> M[加分]
+  L --答錯--> N[搶答]
+  N --> O{有人搶答?}
+  O --否--> P[forfeit]
+  O --是--> Q[buzzIn]
+  Q --> R[搶答作答]
+  R --> S[回合結束]
+```
