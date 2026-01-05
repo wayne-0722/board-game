@@ -64,6 +64,9 @@ type GameStore = {
   clearToast: () => void;
 };
 
+let refreshInFlight: Promise<void> | null = null;
+let lastRefreshAt = 0;
+
 const memoryStorage: StateStorage = {
   getItem: () => null,
   setItem: () => {},
@@ -160,8 +163,22 @@ export const useGameStore = create<GameStore>()(
       refreshSession: async (sessionCode) => {
         const code = sessionCode || get().sessionCode;
         if (!code) return;
-        const res = await api.getState(code);
-        get().setFromSession(res.session);
+        const now = Date.now();
+        if (refreshInFlight || now - lastRefreshAt < 1200) {
+          await refreshInFlight;
+          return;
+        }
+        const fetchTask = (async () => {
+          try {
+            const res = await api.getState(code);
+            get().setFromSession(res.session);
+            lastRefreshAt = Date.now();
+          } finally {
+            refreshInFlight = null;
+          }
+        })();
+        refreshInFlight = fetchTask;
+        await fetchTask;
       },
 
       confirmSeat: async () => {

@@ -80,6 +80,7 @@ export default function ReflectPage() {
       return;
     }
     const sync = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       await refreshSession(sessionCode);
       const state = useGameStore.getState();
       const exists = state.players.some((p) => p.id === state.playerId);
@@ -92,7 +93,7 @@ export default function ReflectPage() {
       }
     };
     sync();
-    const id = setInterval(sync, 2000);
+    const id = setInterval(sync, 3000);
     return () => clearInterval(id);
   }, [sessionCode, refreshSession, joinSession, router, showToast]);
 
