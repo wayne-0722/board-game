@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { createClient } from "redis";
 import { mockQuestions, type Question } from "../lib/questions";
 
 type Player = {
@@ -39,8 +39,22 @@ export type Session = {
 };
 
 const defaultChips = 4000000;
-const useKv = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+const redisUrl = process.env.REDIS_URL;
+const useRedis = Boolean(redisUrl);
 const sessionKey = (code: string) => `session:${code}`;
+
+const globalForRedis = global as unknown as { _redisClient?: ReturnType<typeof createClient> };
+const getRedisClient = async () => {
+  if (!redisUrl) return null;
+  if (!globalForRedis._redisClient) {
+    globalForRedis._redisClient = createClient({ url: redisUrl });
+    globalForRedis._redisClient.on("error", () => undefined);
+  }
+  if (!globalForRedis._redisClient.isOpen) {
+    await globalForRedis._redisClient.connect();
+  }
+  return globalForRedis._redisClient;
+};
 
 // Keep in-memory fallback for local dev.
 const globalForSessions = global as unknown as { _sessions?: Map<string, Session> };
@@ -91,8 +105,16 @@ const createFreshSession = (code: string): Session => ({
 const getSession = async (code: string): Promise<Session> => {
   const normalized = code.trim().toUpperCase();
   let session: Session | null | undefined;
-  if (useKv) {
-    session = await kv.get<Session>(sessionKey(normalized));
+  if (useRedis) {
+    const client = await getRedisClient();
+    const raw = client ? await client.get(sessionKey(normalized)) : null;
+    if (raw) {
+      try {
+        session = JSON.parse(raw) as Session;
+      } catch {
+        session = undefined;
+      }
+    }
   } else {
     session = sessions.get(normalized);
   }
@@ -101,8 +123,11 @@ const getSession = async (code: string): Promise<Session> => {
   } else {
     session = normalizeSession(session);
   }
-  if (useKv) {
-    await kv.set(sessionKey(normalized), session);
+  if (useRedis) {
+    const client = await getRedisClient();
+    if (client) {
+      await client.set(sessionKey(normalized), JSON.stringify(session));
+    }
   } else {
     sessions.set(normalized, session);
   }
@@ -112,8 +137,11 @@ const getSession = async (code: string): Promise<Session> => {
 const saveSession = async (session: Session) => {
   const normalized = session.code.trim().toUpperCase();
   session.code = normalized;
-  if (useKv) {
-    await kv.set(sessionKey(normalized), session);
+  if (useRedis) {
+    const client = await getRedisClient();
+    if (client) {
+      await client.set(sessionKey(normalized), JSON.stringify(session));
+    }
   } else {
     sessions.set(normalized, session);
   }
