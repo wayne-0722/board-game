@@ -115,6 +115,7 @@ export default function PlayPage() {
   const isMyBuzzWinner = Boolean(playerId && buzzWinnerId === playerId);
   const hasEndVoted = Boolean(playerId && endVotes?.includes(playerId));
   const endVotesCount = endVotes?.length ?? 0;
+  const hasChipThreshold = players.some((p) => p.chips >= 3000000);
   const formatChips = (value: number) => `${(value / 10000).toLocaleString()} 萬`;
   const reflectionCount =
     reflectionQuestionIds.length > 0 ? reflectionQuestionIds.length : wrongQuestionIds.length;
@@ -293,12 +294,13 @@ export default function PlayPage() {
       <section className="card p-4 flex items-center justify-between gap-3">
         <div className="space-y-1 text-sm text-slate-700">
           <div className="font-semibold text-slate-900">結束遊戲投票</div>
-          <div>達成半數同意即可結束（{endVotesCount}/{endThreshold}）</div>
+          <div>需有玩家籌碼達 300 萬且過半同意（{endVotesCount}/{endThreshold}）</div>
+          {!hasChipThreshold && <div className="text-slate-500">尚未有人達到 300 萬籌碼。</div>}
         </div>
         <Button
           variant={hasEndVoted ? "secondary" : "primary"}
           onClick={() => voteEndGame()}
-          disabled={gameState === "FINISHED"}
+          disabled={gameState === "FINISHED" || !hasChipThreshold || hasEndVoted}
         >
           {gameState === "FINISHED" ? "已結束" : hasEndVoted ? "已同意" : "同意結束遊戲"}
         </Button>

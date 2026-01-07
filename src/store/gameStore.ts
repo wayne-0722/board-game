@@ -292,6 +292,10 @@ export const useGameStore = create<GameStore>()(
         try {
           const res = await api.voteEnd(sessionCode, playerId);
           get().setFromSession(res.session);
+          if (res.error) {
+            get().showToast(res.error);
+            return;
+          }
           const passed = res.session.gameState === "FINISHED";
           get().showToast(
             passed

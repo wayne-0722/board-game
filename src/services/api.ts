@@ -75,10 +75,13 @@ export const api = {
       body: JSON.stringify({ sessionCode })
     }),
   voteEnd: async (sessionCode: string, playerId: string) =>
-    jsonFetch<{ session: Session; endVotes: string[]; threshold: number }>(`/api/session/end`, {
+    jsonFetch<{ session: Session; endVotes: string[]; threshold: number; error?: string }>(
+      `/api/session/end`,
+      {
       method: "POST",
       body: JSON.stringify({ sessionCode, playerId })
-    }),
+      }
+    ),
   forfeitQuestion: async (sessionCode: string) =>
     jsonFetch<{ session: Session }>(`/api/session/question/forfeit`, {
       method: "POST",

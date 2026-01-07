@@ -40,6 +40,7 @@ export type Session = {
 
 const defaultChips = 1500000;
 const paidBuzzFee = 100000;
+const chipWinThreshold = 3000000;
 const redisUrl = process.env.REDIS_URL;
 const useRedis = Boolean(redisUrl);
 const sessionKey = (code: string) => `session:${code}`;
@@ -281,6 +282,24 @@ const resolveReflectionQuestionIds = (session: Session) => {
 const deductChips = (player: Player, amount: number) => {
   player.chips = Math.max(0, player.chips - amount);
 };
+
+const finalizeEndGame = (session: Session) => {
+  session.gameState = "FINISHED";
+  session.questionLock = false;
+  session.buzzOpen = false;
+  session.buzzReadyAt = null;
+  session.buzzWinnerId = null;
+  if (session.currentQuestion) {
+    session.wrongQuestionIds = Array.from(
+      new Set([...session.wrongQuestionIds, session.currentQuestion.id])
+    );
+  }
+  session.reflectionQuestionIds = getReflectionQuestionIds(session);
+  return session;
+};
+
+const shouldEndByChips = (session: Session) =>
+  session.players.some((player) => player.chips >= chipWinThreshold);
 
 export const startQuestion = async (sessionCode: string) => {
   const session = await getSession(sessionCode);
@@ -589,20 +608,20 @@ export const voteEndGame = async (sessionCode: string, playerId: string) => {
   if (!session.players.some((p) => p.id === playerId)) {
     return { session: await saveSession(session), error: "玩家不存在" };
   }
-  session.endVotes = Array.from(new Set([...(session.endVotes || []), playerId]));
   const confirmedCount = session.players.filter((p) => p.confirmed).length || 0;
   const livingPlayers = confirmedCount > 0 ? confirmedCount : session.players.length || 1;
   const threshold = Math.ceil(livingPlayers / 2);
-  if (session.endVotes.length >= threshold) {
-    session.gameState = "FINISHED";
-    session.questionLock = false;
-    session.buzzOpen = false;
-    if (session.currentQuestion) {
-      session.wrongQuestionIds = Array.from(
-        new Set([...session.wrongQuestionIds, session.currentQuestion.id])
-      );
-    }
-    session.reflectionQuestionIds = getReflectionQuestionIds(session);
+  if (!shouldEndByChips(session)) {
+    return {
+      session: await saveSession(session),
+      endVotes: session.endVotes || [],
+      threshold,
+      error: "需有玩家籌碼達 300 萬才能投票結束"
+    };
+  }
+  session.endVotes = Array.from(new Set([...(session.endVotes || []), playerId]));
+  if (session.endVotes.length >= threshold && shouldEndByChips(session)) {
+    finalizeEndGame(session);
   }
   return { session: await saveSession(session), endVotes: session.endVotes, threshold };
 };
