@@ -43,13 +43,13 @@ const difficultyLabels: Record<string, string> = {
 };
 
 const difficultyStakes: Record<string, number> = {
-  easy: 100000,
+  easy: 200000,
   low_medium: 300000,
   medium: 500000,
   medium_high: 600000,
   high: 600000,
   hard: 700000,
-  易: 100000,
+  易: 200000,
   中低: 300000,
   中: 500000,
   中高: 600000,

@@ -254,7 +254,7 @@ useEffect(() => {
         </div>
         <h1 className="text-2xl font-bold leading-9">{question.text}</h1>
         <div className="text-sm text-slate-600">
-          題目籌碼：{formatChips(stake)}（付費搶答先扣題目籌碼；搶答答對由原答錯者支付 1 倍；搶答答錯扣 1 倍）
+          題目籌碼：{formatChips(stake)}（付費搶答先扣 10 萬；搶答複選題需全對才給籌碼；搶答答對由原答錯者支付 1 倍）
         </div>
         <div className="text-sm text-slate-600">我的籌碼：{formatChips(myChips)}</div>
 

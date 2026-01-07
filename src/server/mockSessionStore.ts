@@ -38,7 +38,8 @@ export type Session = {
   endVotes: string[];
 };
 
-const defaultChips = 4000000;
+const defaultChips = 1500000;
+const paidBuzzFee = 100000;
 const redisUrl = process.env.REDIS_URL;
 const useRedis = Boolean(redisUrl);
 const sessionKey = (code: string) => `session:${code}`;
@@ -246,12 +247,12 @@ const getStake = (question: Question | null) => {
   const raw = String(question.difficulty || "").trim();
   const normalized = raw.toLowerCase();
   const stakeByDifficulty: Record<string, number> = {
-    易: 100000,
+    易: 200000,
     中低: 300000,
     中: 500000,
     中高: 600000,
     難: 700000,
-    easy: 100000,
+    easy: 200000,
     low_medium: 300000,
     medium: 500000,
     medium_high: 600000,
@@ -355,7 +356,15 @@ export const submitAnswer = async ({
     actualSet.forEach((value) => {
       if (expectedSet.has(value)) correctCount += 1;
     });
-    scoreDelta = correctCount === 0 ? -stake : Math.min(stake, correctCount * 200000);
+    const isBuzzAnswer =
+      Boolean(session.lastWrongResponderId) &&
+      Boolean(responderId) &&
+      responderId !== session.lastWrongResponderId;
+    if (isBuzzAnswer) {
+      scoreDelta = isCorrect ? stake : 0;
+    } else {
+      scoreDelta = correctCount === 0 ? -stake : Math.min(stake, correctCount * 200000);
+    }
   } else {
     scoreDelta = isCorrect ? stake : -stake;
   }
@@ -470,7 +479,7 @@ export const buzzIn = async ({
   if (session.paidBuzzUsedIds.includes(playerId)) {
     return { session: await saveSession(session), error: "付費搶答已使用" };
   }
-  if (buzzer.chips < stake) {
+  if (buzzer.chips < paidBuzzFee) {
     return { session: await saveSession(session), error: "籌碼不足，無法付費搶答" };
   }
   if (!session.buzzReadyAt || now > session.buzzReadyAt) {
@@ -484,7 +493,7 @@ export const buzzIn = async ({
   session.buzzWinnerId = playerId;
   session.activeResponderId = playerId;
   session.buzzOpen = false;
-  deductChips(buzzer, stake);
+  deductChips(buzzer, paidBuzzFee);
   session.paidBuzzUsedIds = Array.from(new Set([...(session.paidBuzzUsedIds || []), playerId]));
   return { session: await saveSession(session) };
 };

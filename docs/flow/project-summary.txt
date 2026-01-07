@@ -67,7 +67,7 @@ sequenceDiagram
   participant Session
 
   UI->>API: POST /api/session/question/buzz
-  API->>Session: validate + deduct stake + set responder
+  API->>Session: validate + deduct fee (100k) + set responder
   API-->>UI: session
 
   UI->>API: POST /api/session/question/answer
@@ -197,7 +197,15 @@ Retry Strategy:
 - On error -> showToast + refreshSession
 
 ==================================================
-7. Performance & Scalability
+7. Game Rules / Chips
+==================================================
+- Starting chips: 1,500,000
+- Easy difficulty stake: 200,000
+- Paid buzz fee: 100,000
+- Buzz multi-choice must be fully correct to earn chips
+
+==================================================
+8. Performance & Scalability
 ==================================================
 - Use KV for shared state across serverless instances
 - Consider Session TTL (e.g., 6h) in KV
@@ -206,7 +214,7 @@ Retry Strategy:
 - Add batching for API calls if traffic grows
 
 ==================================================
-8. Test Checklist
+9. Test Checklist
 ==================================================
 - Join room (2-digit validation)
 - Seat confirmation
@@ -220,7 +228,7 @@ Retry Strategy:
 - Ranking & reward distribution
 
 ==================================================
-9. Security Suggestions
+10. Security Suggestions
 ==================================================
 - Rate limit API routes
 - Validate room code on server
@@ -229,7 +237,7 @@ Retry Strategy:
 - Verify playerId belongs to session
 
 ==================================================
-10. UX Improvements
+11. UX Improvements
 ==================================================
 - Show explicit status banner for answer correctness
 - Clear button states during buzz window
@@ -237,7 +245,7 @@ Retry Strategy:
 - Provide countdown emphasis for buzz/reflect
 
 ==================================================
-11. Changelog / Release Notes
+12. Changelog / Release Notes
 ==================================================
 - v1.0: Base game loop + question flow
 - v1.1: Paid buzz, reflection ranking
@@ -245,7 +253,7 @@ Retry Strategy:
 - v1.3: Room code to 2 digits + UI cleanup
 
 ==================================================
-12. Flowchart (Mermaid)
+13. Flowchart (Mermaid)
 ==================================================
 ```mermaid
 flowchart TD

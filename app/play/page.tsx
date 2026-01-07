@@ -189,7 +189,7 @@ export default function PlayPage() {
           </div>
           <h2 className="text-2xl font-bold leading-9">{currentQuestion.text}</h2>
           <div className="text-sm text-slate-600">
-            題目籌碼：{formatChips(stake)}，付費搶答會先扣題目籌碼；搶答答對由原答錯者支付題目籌碼，搶答答錯扣 2 倍。
+            題目籌碼：{formatChips(stake)}，付費搶答先扣 10 萬；搶答複選題需全對才給籌碼；搶答答對由原答錯者支付題目籌碼。
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
