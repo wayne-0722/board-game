@@ -1,23 +1,34 @@
 # Board Turn Mock
 
-Mobile-first Next.js 14 prototype for a turn-based anti-fraud quiz flow. Uses Tailwind CSS, TypeScript, and Zustand with localStorage persistence (session code + player info).
+Socket.IO based Next.js 14 prototype for a turn-based anti-fraud quiz flow.
 
 ## Scripts
 
 - `npm install`
-- `npm run dev` — start app router dev server
-- `npm run build` — production build
-- `npm start` — start built app
+- `npm run dev` starts the custom server with Next.js and Socket.IO
+- `npm run build` builds the Next.js app
+- `npm start` starts the production server
 
 ## Routes
 
-- `/` join with short session code
-- `/lobby` waiting room, confirm seat, start when 2+ confirmed
-- `/play` turn control + question lock flow
-- `/question` answer + explanation + handoff
+- `/` join a room with a 2-digit session code
+- `/session` unified room flow for lobby, play, question, and reflection
+- `/lobby`, `/play`, `/question`, `/reflect` redirect to `/session`
 
-Mock data lives in `src/lib/questions.ts` and state in `src/store/gameStore.ts`. API placeholders: `src/services/api.ts`.
+## Realtime flow
 
-## Mock backend (in-memory)
-- Simple Next.js API routes under `app/api/session/*` keep session state in-memory.
-- Run `npm run dev` on one machine; other devices on the same LAN can join via that dev server host/IP with the same session code to share state.
+- Server entry: `server.ts`
+- Socket.IO server: `src/server/realtimeServer.ts`
+- Session state: `src/server/mockSessionStore.ts`
+- Client store: `src/store/gameStore.ts`
+
+## LAN usage
+
+- The server binds to `0.0.0.0:3000`
+- Devices on the same LAN can open `http://<host-ip>:3000`
+- Example on this machine: `http://192.168.0.102:3000`
+
+## Notes
+
+- Legacy HTTP API backups are stored under `legacy_disabled/`
+- Mock questions live in `src/lib/questions.ts` and `mockQuestions_with_penalty.json`

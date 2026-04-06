@@ -4,18 +4,24 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "tsx server.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "cross-env NODE_ENV=production tsx server.ts",
     "lint": "next lint"
   },
   "dependencies": {
+    "@types/ws": "^8.18.1",
     "@vercel/kv": "^1.0.1",
     "clsx": "^2.1.0",
+    "cross-env": "^10.1.0",
     "next": "14.1.0",
-    "redis": "^4.6.13",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "redis": "^4.6.13",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "tsx": "^4.21.0",
+    "ws": "^8.19.0",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

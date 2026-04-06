@@ -7,6 +7,6 @@ export async function POST(req: Request) {
   if (!sessionCode) {
     return NextResponse.json({ error: "缺少 sessionCode" }, { status: 400 });
   }
-  const session = await startGame(sessionCode);
-  return NextResponse.json({ session });
+  const { session, error } = await startGame(sessionCode);
+  return NextResponse.json({ session, error });
 }

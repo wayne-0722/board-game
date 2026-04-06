@@ -35,6 +35,8 @@ const difficultyLabels: Record<string, string> = {
   medium_high: "中高",
   high: "中高",
   hard: "難",
+  mediumlow: "中低",
+  mediumhigh: "中高",
   易: "易",
   中低: "中低",
   中: "中",
@@ -43,13 +45,15 @@ const difficultyLabels: Record<string, string> = {
 };
 
 const difficultyStakes: Record<string, number> = {
-  easy: 200000,
+  easy: 100000,
   low_medium: 300000,
   medium: 500000,
   medium_high: 600000,
   high: 600000,
   hard: 700000,
-  易: 200000,
+  mediumlow: 300000,
+  mediumhigh: 600000,
+  易: 100000,
   中低: 300000,
   中: 500000,
   中高: 600000,
@@ -58,22 +62,22 @@ const difficultyStakes: Record<string, number> = {
 
 const normalizeDifficulty = (value: string) => {
   const trimmed = value.trim();
-  return difficultyLabels[trimmed] ?? trimmed;
+  return difficultyLabels[trimmed] ?? difficultyLabels[trimmed.toLowerCase()] ?? trimmed;
 };
 
-const resolveStake = (value: string, fallback?: number) => {
-  const trimmed = value.trim();
+const resolveStake = (difficulty: string, fallback?: number) => {
+  const trimmed = difficulty.trim();
   return (
+    fallback ??
     difficultyStakes[trimmed] ??
     difficultyStakes[trimmed.toLowerCase()] ??
-    fallback ??
     100000
   );
 };
 
-export const mockQuestions: Question[] = (rawQuestions as RawQuestion[]).map((q) => ({
-  ...q,
-  difficulty: normalizeDifficulty(q.difficulty),
-  stake: resolveStake(q.difficulty, q.stake),
-  penalty: resolveStake(q.difficulty, q.penalty ?? q.stake)
+export const mockQuestions: Question[] = (rawQuestions as RawQuestion[]).map((question) => ({
+  ...question,
+  difficulty: normalizeDifficulty(question.difficulty),
+  stake: resolveStake(question.difficulty, question.stake),
+  penalty: resolveStake(question.difficulty, question.penalty ?? question.stake)
 }));

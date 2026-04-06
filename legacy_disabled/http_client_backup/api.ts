@@ -30,7 +30,7 @@ export const api = {
       body: JSON.stringify({ sessionCode, playerId, playerName })
     }),
   startGame: async (sessionCode: string) =>
-    jsonFetch<{ session: Session }>(`/api/session/start`, {
+    jsonFetch<{ session: Session; error?: string }>(`/api/session/start`, {
       method: "POST",
       body: JSON.stringify({ sessionCode })
     }),
@@ -40,22 +40,22 @@ export const api = {
       body: JSON.stringify({ sessionCode })
     }),
   startQuestion: async (sessionCode: string) =>
-    jsonFetch<{ session: Session }>(`/api/session/question/start`, {
+    jsonFetch<{ session: Session; error?: string }>(`/api/session/question/start`, {
       method: "POST",
       body: JSON.stringify({ sessionCode })
     }),
   submitAnswer: async (sessionCode: string, selectedIndices: number[]) =>
-    jsonFetch<{ session: Session }>(`/api/session/question/answer`, {
+    jsonFetch<{ session: Session; error?: string }>(`/api/session/question/answer`, {
       method: "POST",
       body: JSON.stringify({ sessionCode, selectedIndices })
     }),
   buzzIn: async (sessionCode: string, playerId: string) =>
-    jsonFetch<{ session: Session }>(`/api/session/question/buzz`, {
+    jsonFetch<{ session: Session; error?: string }>(`/api/session/question/buzz`, {
       method: "POST",
       body: JSON.stringify({ sessionCode, playerId })
     }),
   startReflection: async (sessionCode: string, playerId: string) =>
-    jsonFetch<{ session: Session }>(`/api/session/reflect/start`, {
+    jsonFetch<{ session: Session; error?: string }>(`/api/session/reflect/start`, {
       method: "POST",
       body: JSON.stringify({ sessionCode, playerId })
     }),
@@ -65,7 +65,7 @@ export const api = {
     answers: Record<string, number[]>,
     totalTime?: number
   ) =>
-    jsonFetch<{ session: Session }>(`/api/session/reflect/submit`, {
+    jsonFetch<{ session: Session; error?: string }>(`/api/session/reflect/submit`, {
       method: "POST",
       body: JSON.stringify({ sessionCode, playerId, answers, totalTime })
     }),

@@ -37,6 +37,7 @@
   ],
   "exclude": [
     "node_modules",
-    "題庫.ts"
+    "題庫.ts",
+    "legacy_disabled"
   ]
 }

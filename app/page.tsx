@@ -1,75 +1,143 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import splashImage from "../S__4063236.jpg";
 import { Button } from "../components/ui/Button";
 import { Toast } from "../components/Toast";
 import { useGameStore } from "../src/store/gameStore";
 
 export default function HomePage() {
   const router = useRouter();
-  const savedCode = useGameStore((s) => s.sessionCode);
-  const joinSession = useGameStore((s) => s.joinSession);
-  const showToast = useGameStore((s) => s.showToast);
+  const savedCode = useGameStore((state) => state.sessionCode);
+  const joinSession = useGameStore((state) => state.joinSession);
+  const ensureRealtime = useGameStore((state) => state.ensureRealtime);
+  const showToast = useGameStore((state) => state.showToast);
   const [inputCode, setInputCode] = useState("");
+  const [showJoinPanel, setShowJoinPanel] = useState(false);
 
-  useEffect(() => {
-    if (savedCode) {
-      setInputCode(savedCode);
-    }
-  }, [savedCode]);
-
-  const handleJoin = () => {
+  const handleJoin = async () => {
     const playerName = useGameStore.getState().playerName;
     const trimmed = inputCode.trim();
     if (!/^\d{2}$/.test(trimmed)) {
-      showToast("請輸入 2 位數房間號");
+      showToast("房號必須是 2 位數字");
       return;
     }
-    joinSession(trimmed, playerName)
-      .then(() => router.push("/lobby"))
-      .catch((err) => showToast(err.message || "加入失敗"));
+
+    try {
+      await ensureRealtime();
+      await joinSession(trimmed, playerName);
+      router.push("/session");
+    } catch (error: any) {
+      showToast(error?.message || "加入房間失敗");
+    }
   };
 
-  return (
-    <main className="pt-10 space-y-6">
-      <Toast />
-      <div className="text-sm text-brand-accent font-semibold uppercase tracking-wide">
-        輸入房間號 / Join Room
-      </div>
-      <h1 className="text-3xl font-bold leading-tight">加入房間</h1>
-      <section className="card p-6 space-y-5">
-        <label className="space-y-2 block">
-          <div className="text-lg font-semibold">房間號 Session Code</div>
-          <input
-            value={inputCode}
-            onChange={(e) => setInputCode(e.target.value)}
-            placeholder="輸入 2 位數"
-            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-xl tracking-[0.2em] uppercase focus:outline-none focus:ring-2 focus:ring-brand-primary"
-            maxLength={2}
-            inputMode="numeric"
+  if (!showJoinPanel) {
+    return (
+      <>
+        <main className="fixed inset-0 z-40 overflow-hidden bg-black md:hidden">
+          <Toast />
+          <Image
+            src={splashImage}
+            alt=""
+            aria-hidden="true"
+            fill
+            priority
+            sizes="100vw"
+            className="scale-110 object-cover opacity-55 blur-2xl"
           />
-          <p className="text-slate-500 text-sm">同一裝置只需輸入一次。</p>
-        </label>
-        <div className="space-y-3">
-          <Button onClick={handleJoin}>加入遊戲 Join</Button>
-          {savedCode && (
-            <Button
-              variant="secondary"
-              onClick={() => router.push("/lobby")}
-              aria-label="繼續房間"
-            >
-              繼續房間
+          <Image
+            src={splashImage}
+            alt="網站入口畫面"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover"
+          />
+          <button
+            type="button"
+            aria-label="進入網站"
+            onClick={() => setShowJoinPanel(true)}
+            className="absolute left-1/2 top-[66.5%] h-[8.5dvh] min-h-14 w-[48vw] -translate-x-1/2 -translate-y-1/2 rounded-[999px] bg-transparent"
+          />
+        </main>
+        <main className="hidden space-y-6 pt-10 md:block">
+          <JoinPanel
+            inputCode={inputCode}
+            onInputCodeChange={setInputCode}
+            onJoin={handleJoin}
+            onResume={() => router.push("/session")}
+            savedCode={savedCode}
+          />
+        </main>
+      </>
+    );
+  }
+
+  return (
+    <main className="space-y-6 pt-10">
+      <JoinPanel
+        inputCode={inputCode}
+        onInputCodeChange={setInputCode}
+        onJoin={handleJoin}
+        onResume={() => router.push("/session")}
+        savedCode={savedCode}
+      />
+    </main>
+  );
+}
+
+function JoinPanel({
+  inputCode,
+  onInputCodeChange,
+  onJoin,
+  onResume,
+  savedCode
+}: {
+  inputCode: string;
+  onInputCodeChange: (value: string) => void;
+  onJoin: () => void;
+  onResume: () => void;
+  savedCode: string;
+}) {
+  return (
+    <>
+      <Toast />
+
+      <section className="card overflow-hidden">
+        <div className="bg-gradient-to-r from-emerald-800 via-emerald-700 to-amber-500 p-6 text-white">
+          <div className="text-sm font-semibold uppercase tracking-[0.25em]">Join Room</div>
+          <h1 className="mt-3 text-3xl font-bold leading-tight">輸入房號後加入同一個遊戲房間</h1>
+        </div>
+
+        <div className="p-6">
+          <div className="space-y-4">
+            <label className="block space-y-2">
+              <div className="text-base font-semibold text-slate-800">房號</div>
+              <input
+                value={inputCode}
+                onChange={(event) => onInputCodeChange(event.target.value)}
+                placeholder="例如 12"
+                maxLength={2}
+                inputMode="numeric"
+                className="w-full rounded-2xl border border-slate-300 px-4 py-4 text-3xl font-bold tracking-[0.35em] text-slate-900 outline-none transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-200"
+              />
+            </label>
+
+            <Button onClick={onJoin} className="h-16 text-xl">
+              加入房間
             </Button>
-          )}
+
+            {savedCode && (
+              <Button variant="secondary" onClick={onResume} className="h-14">
+                回到目前房間
+              </Button>
+            )}
+          </div>
         </div>
       </section>
-      <section className="p-4 rounded-xl border border-dashed border-brand-accent/40 bg-brand-surface">
-        <div className="font-semibold text-brand-accent mb-1">小提醒</div>
-        <p className="text-slate-600">
-          分享 2 位數房間號給其他玩家即可加入同一局。
-        </p>
-      </section>
-    </main>
+    </>
   );
 }
