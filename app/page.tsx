@@ -16,27 +16,20 @@ const highlights = [
 
 const flowSteps = ["Join room", "Sync turn", "Answer", "Buzz", "Score"];
 
-const joinCopy = {
-  en: {
-    eyebrow: "Join Room",
-    title: "Enter a live tabletop session.",
-    description: "Use a two-digit room code. No app installation is required.",
-    playerName: "Player name",
-    playerPlaceholder: "Player",
-    roomCode: "Room code",
-    join: "Join Session",
-    resume: "Resume Room"
-  },
-  zh: {
-    eyebrow: "加入房間",
-    title: "輸入房號後加入同一場遊戲。",
-    description: "請輸入 2 位數房號，不需要安裝 App，手機瀏覽器即可參加。",
-    playerName: "玩家名稱",
-    playerPlaceholder: "玩家",
-    roomCode: "房號",
-    join: "加入房間",
-    resume: "回到房間"
-  }
+const zh = {
+  enterAria: "\u9032\u5165\u7b54\u984c\u7cfb\u7d71",
+  invalidRoom: "\u8acb\u8f38\u5165 2 \u4f4d\u6578\u623f\u865f\u3002",
+  joinFailed: "\u52a0\u5165\u623f\u9593\u5931\u6557\u3002",
+  eyebrow: "\u52a0\u5165\u623f\u9593",
+  title: "\u8f38\u5165\u623f\u865f",
+  description:
+    "\u8acb\u8f38\u5165\u73a9\u5bb6\u540d\u7a31\u8207 2 \u4f4d\u6578\u623f\u865f\uff0c\u624b\u6a5f\u700f\u89bd\u5668\u5373\u53ef\u53c3\u52a0\u3002",
+  playerName: "\u73a9\u5bb6\u540d\u7a31",
+  playerPlaceholder: "\u73a9\u5bb6",
+  roomCode: "\u623f\u865f",
+  join: "\u52a0\u5165\u623f\u9593",
+  resume: "\u56de\u5230\u623f\u9593",
+  back: "\u56de\u5230\u5165\u53e3"
 };
 
 export default function HomePage() {
@@ -51,12 +44,12 @@ export default function HomePage() {
   const [nameInput, setNameInput] = useState(savedName);
   const [showJoinPanel, setShowJoinPanel] = useState(false);
 
-  const handleJoin = async () => {
+  const handleJoin = async (fallbackMessage: string) => {
     const trimmedCode = inputCode.trim();
     const trimmedName = nameInput.trim();
 
     if (!/^\d{2}$/.test(trimmedCode)) {
-      showToast("請輸入 2 位數房號。");
+      showToast(zh.invalidRoom);
       return;
     }
 
@@ -66,7 +59,7 @@ export default function HomePage() {
       await joinSession(trimmedCode, trimmedName);
       router.push("/session");
     } catch (error: any) {
-      showToast(error?.message || "加入房間失敗。");
+      showToast(error?.message || fallbackMessage);
     }
   };
 
@@ -94,7 +87,7 @@ export default function HomePage() {
           />
           <button
             type="button"
-            aria-label="Enter the answer system"
+            aria-label={zh.enterAria}
             onClick={() => setShowJoinPanel(true)}
             className="absolute left-1/2 top-[66.5%] h-[8.5dvh] min-h-14 w-[48vw] -translate-x-1/2 -translate-y-1/2 rounded-[999px] bg-transparent"
           />
@@ -105,7 +98,7 @@ export default function HomePage() {
           nameInput={nameInput}
           onInputCodeChange={setInputCode}
           onNameInputChange={setNameInput}
-          onJoin={handleJoin}
+          onJoin={() => void handleJoin("Failed to join room.")}
           onResume={() => router.push("/session")}
           savedCode={savedCode}
         />
@@ -114,17 +107,17 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#fff7d7_0,#f7f7f2_34%,#d9efe9_100%)] px-4 py-6 md:hidden">
+    <main className="min-h-screen bg-[#f7f7f2] px-5 py-6 md:hidden">
       <Toast />
-      <JoinPanel
+      <MobileJoinPanel
         inputCode={inputCode}
         nameInput={nameInput}
         onInputCodeChange={setInputCode}
         onNameInputChange={setNameInput}
-        onJoin={handleJoin}
+        onJoin={() => void handleJoin(zh.joinFailed)}
         onResume={() => router.push("/session")}
+        onBack={() => setShowJoinPanel(false)}
         savedCode={savedCode}
-        locale="zh"
       />
     </main>
   );
@@ -230,7 +223,7 @@ function DesktopPortfolio({
               </div>
             </div>
 
-            <JoinPanel
+            <DesktopJoinCard
               inputCode={inputCode}
               nameInput={nameInput}
               onInputCodeChange={onInputCodeChange}
@@ -238,7 +231,6 @@ function DesktopPortfolio({
               onJoin={onJoin}
               onResume={onResume}
               savedCode={savedCode}
-              locale="en"
             />
           </div>
         </section>
@@ -247,15 +239,87 @@ function DesktopPortfolio({
   );
 }
 
-function JoinPanel({
+function MobileJoinPanel({
   inputCode,
   nameInput,
   onInputCodeChange,
   onNameInputChange,
   onJoin,
   onResume,
-  savedCode,
-  locale
+  onBack,
+  savedCode
+}: {
+  inputCode: string;
+  nameInput: string;
+  onInputCodeChange: (value: string) => void;
+  onNameInputChange: (value: string) => void;
+  onJoin: () => void;
+  onResume: () => void;
+  onBack: () => void;
+  savedCode: string;
+}) {
+  return (
+    <section className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-sm flex-col justify-center">
+      <button
+        type="button"
+        onClick={onBack}
+        className="mb-4 self-start rounded-full bg-white px-4 py-2 text-sm font-bold text-slate-600 shadow-sm"
+      >
+        {zh.back}
+      </button>
+
+      <div className="rounded-[1.6rem] bg-white p-6 shadow-[0_18px_50px_rgba(15,23,42,0.14)]">
+        <div className="text-sm font-bold tracking-[0.18em] text-brand-primary">{zh.eyebrow}</div>
+        <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950">{zh.title}</h1>
+        <p className="mt-3 text-base leading-7 text-slate-600">{zh.description}</p>
+
+        <div className="mt-7 space-y-5">
+          <label className="block space-y-2">
+            <div className="text-base font-bold text-slate-800">{zh.playerName}</div>
+            <input
+              value={nameInput}
+              onChange={(event) => onNameInputChange(event.target.value)}
+              placeholder={zh.playerPlaceholder}
+              maxLength={18}
+              className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-4 text-xl font-bold text-slate-950 outline-none focus:border-brand-primary focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+
+          <label className="block space-y-2">
+            <div className="text-base font-bold text-slate-800">{zh.roomCode}</div>
+            <input
+              value={inputCode}
+              onChange={(event) => onInputCodeChange(event.target.value.replace(/\D/g, "").slice(0, 2))}
+              placeholder="12"
+              maxLength={2}
+              inputMode="numeric"
+              className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-5 text-center text-5xl font-black tracking-[0.45em] text-slate-950 outline-none focus:border-brand-primary focus:ring-4 focus:ring-emerald-100"
+            />
+          </label>
+
+          <Button onClick={onJoin} className="h-16 rounded-2xl text-xl font-black">
+            {zh.join}
+          </Button>
+
+          {savedCode && (
+            <Button variant="secondary" onClick={onResume} className="h-14 rounded-2xl">
+              {zh.resume} {savedCode}
+            </Button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function DesktopJoinCard({
+  inputCode,
+  nameInput,
+  onInputCodeChange,
+  onNameInputChange,
+  onJoin,
+  onResume,
+  savedCode
 }: {
   inputCode: string;
   nameInput: string;
@@ -264,36 +328,33 @@ function JoinPanel({
   onJoin: () => void;
   onResume: () => void;
   savedCode: string;
-  locale: keyof typeof joinCopy;
 }) {
-  const copy = joinCopy[locale];
-
   return (
     <section className="mx-auto max-w-md overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur">
       <div className="bg-gradient-to-r from-emerald-900 via-emerald-700 to-amber-500 p-6 text-white">
-        <div className="text-sm font-bold uppercase tracking-[0.25em] text-white/75">{copy.eyebrow}</div>
+        <div className="text-sm font-bold uppercase tracking-[0.25em] text-white/75">Join Room</div>
         <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight">
-          {copy.title}
+          Enter a live tabletop session.
         </h2>
         <p className="mt-3 text-sm leading-6 text-white/80">
-          {copy.description}
+          Use a two-digit room code. No app installation is required.
         </p>
       </div>
 
       <div className="space-y-4 p-6">
         <label className="block space-y-2">
-          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{copy.playerName}</div>
+          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Player name</div>
           <input
             value={nameInput}
             onChange={(event) => onNameInputChange(event.target.value)}
-            placeholder={copy.playerPlaceholder}
+            placeholder="Player"
             maxLength={18}
             className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-lg font-bold text-slate-900 outline-none transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-200"
           />
         </label>
 
         <label className="block space-y-2">
-          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{copy.roomCode}</div>
+          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Room code</div>
           <input
             value={inputCode}
             onChange={(event) => onInputCodeChange(event.target.value.replace(/\D/g, "").slice(0, 2))}
@@ -305,12 +366,12 @@ function JoinPanel({
         </label>
 
         <Button onClick={onJoin} className="h-16 rounded-2xl text-xl font-black">
-          {copy.join}
+          Join Session
         </Button>
 
         {savedCode && (
           <Button variant="secondary" onClick={onResume} className="h-14 rounded-2xl">
-            {copy.resume} {savedCode}
+            Resume Room {savedCode}
           </Button>
         )}
       </div>
