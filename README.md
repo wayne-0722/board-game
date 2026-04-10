@@ -1,36 +1,48 @@
 # Board Game Answer System
 
-桌遊硬體配套的即時答題與計分系統。玩家使用手機瀏覽器加入同一場活動，系統負責房間同步、題目顯示、答題判定、錯答搶答、分數更新與回合推進。
+A portfolio-ready realtime answer and scoring system built for a physical board-game event. Players join from mobile browsers, share a room, answer questions, trigger buzz-in windows after wrong answers, and receive synchronized score updates.
+
+Live demo: https://board-game-oclb.onrender.com
+
+## What This Project Shows
+
+- Mobile-first UX for an offline tabletop activity.
+- Realtime multi-player synchronization with Socket.IO rooms.
+- Server-side game-flow guards for turn ownership, answer submission, buzz-in and reflection exit.
+- Render deployment using a custom Node.js server for WebSocket support.
+- A simple session model that fits short live events without long-term data retention.
 
 ## Tech Stack
 
-- Next.js 14 + React + TypeScript
+- Next.js 14, React 18, TypeScript
 - Tailwind CSS
-- Zustand client state
-- Socket.IO realtime sync
+- Zustand client store
 - Node.js custom server
-- In-memory session store, with optional Redis support via `REDIS_URL`
-- Render Web Service deployment
+- Socket.IO server/client
+- In-memory session store, with optional Redis support through `REDIS_URL`
+- Render Web Service
 
-## Main Flow
+## Core Flow
 
-1. 玩家進入 `/`，手機版顯示活動入口圖，電腦版直接顯示測試/加入頁。
-2. 玩家輸入房號加入活動。
-3. `/session` 統一處理 lobby、答題、搶答、反思與結算流程。
-4. Socket.IO 將 session state 推送給同房間玩家。
-5. 錯答時開啟搶答視窗，避免原答題者直接跳過搶答流程。
+1. A player opens `/` on a mobile browser.
+2. The mobile splash screen displays the event artwork and a transparent entry button over the image CTA.
+3. The player enters a two-digit room code and joins `/session`.
+4. The server broadcasts session snapshots to everyone in the same Socket.IO room.
+5. Players move through lobby, turn selection, question answering, wrong-answer buzz-in, scoring and reflection.
+6. Server-side guards prevent invalid actions, such as skipping the buzz window while it is open.
 
 ## Project Structure
 
-- `server.ts` - custom Next.js + Socket.IO server entry
-- `src/server/realtimeServer.ts` - realtime event handling and game flow guards
-- `src/server/mockSessionStore.ts` - session state, scoring, buzz and reflection logic
-- `src/store/gameStore.ts` - client socket connection and Zustand store
-- `app/page.tsx` - join entry page
-- `app/session/page.tsx` - unified gameplay page
-- `src/lib/questions.ts` - question loader
-- `mockQuestions_with_penalty.json` - question data
-- `docs/board-game-answer-system-report.md` - portfolio technical report
+- `server.ts` - custom Next.js and Socket.IO server entry.
+- `src/server/realtimeServer.ts` - Socket.IO event handlers and action validation.
+- `src/server/mockSessionStore.ts` - session state, scoring, buzz-in and reflection rules.
+- `src/store/gameStore.ts` - client socket connection and Zustand state.
+- `src/realtime/events.ts` - typed client/server realtime contracts.
+- `app/page.tsx` - portfolio landing page and room entry.
+- `app/session/page.tsx` - unified gameplay screen.
+- `src/lib/questions.ts` - question loader.
+- `mockQuestions_with_penalty.json` - question data.
+- `docs/board-game-answer-system-report.md` - portfolio technical report.
 
 ## Local Development
 
@@ -39,20 +51,20 @@ npm install
 npm run dev
 ```
 
-The development server binds to `0.0.0.0:3000`, so mobile devices on the same LAN can open `http://<host-ip>:3000`.
+The local server binds to `0.0.0.0:3000`, so phones on the same LAN can open `http://<host-ip>:3000`.
 
-## Production
+## Production Build
 
 ```bash
 npm run build
 npm start
 ```
 
-Render can use:
+Render settings:
 
 - Build command: `npm ci && npm run build`
 - Start command: `npm start`
-- Environment: Node 20
-- Optional env var: `REDIS_URL`, only needed if session persistence or multiple instances are required
+- Runtime: Node 20
+- Optional env var: `REDIS_URL`
 
-For a single short event without data retention, one Render instance with in-memory session state is enough. Do not scale to multiple instances unless Redis and a Socket.IO adapter are added.
+For one short event with around 100 players and no data retention requirement, one Render instance with in-memory state is enough. Do not scale to multiple instances unless Redis and a Socket.IO adapter are added.

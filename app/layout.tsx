@@ -15,7 +15,7 @@ export default function RootLayout({
     <html lang="zh-Hant">
       <body>
         <div className="min-h-screen bg-brand-surface text-slate-900">
-          <div className="max-w-md mx-auto px-4 pb-10">{children}</div>
+          {children}
         </div>
       </body>
     </html>
