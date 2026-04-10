@@ -36,36 +36,48 @@ The project is designed for short live events with around 100 players and no lon
 
 ```txt
 .
-├── app/
-│   ├── page.tsx              # Portfolio landing page and room entry
-│   ├── session/page.tsx      # Unified gameplay screen
-│   ├── lobby|play|question|reflect/
-│   │   └── page.tsx          # Redirect routes into /session
-│   ├── layout.tsx            # Root layout and metadata
-│   └── globals.css           # Global styles
-├── components/
-│   ├── Toast.tsx             # Global toast message UI
-│   └── ui/Button.tsx         # Shared button component
-├── src/
-│   ├── lib/questions.ts      # Question data loader
-│   ├── realtime/events.ts    # Typed Socket.IO event contracts
-│   ├── server/
-│   │   ├── realtimeServer.ts # Socket.IO handlers and game-flow guards
-│   │   └── mockSessionStore.ts # Session state, scoring, buzz-in and reflection logic
-│   └── store/gameStore.ts    # Client socket connection and Zustand store
-├── docs/
-│   ├── README.md
-│   ├── portfolio-case-study.md
-│   ├── architecture.md
-│   ├── demo-guide.md
-│   └── deployment.md
-├── server.ts                 # Custom Next.js + Socket.IO server entry
-├── mockQuestions_with_penalty.json
-├── S__4063236.jpg            # Mobile entry artwork
-├── render.yaml               # Render deployment config
-├── .env.example              # Optional Redis env example
-└── package.json
+|-- app/
+|   |-- page.tsx                 # Portfolio landing page and room entry
+|   |-- session/page.tsx         # Unified gameplay screen
+|   |-- lobby/page.tsx           # Redirect route into /session
+|   |-- play/page.tsx            # Redirect route into /session
+|   |-- question/page.tsx        # Redirect route into /session
+|   |-- reflect/page.tsx         # Redirect route into /session
+|   |-- layout.tsx               # Root layout and metadata
+|   `-- globals.css              # Global styles
+|-- components/
+|   |-- Toast.tsx                # Global toast message UI
+|   `-- ui/Button.tsx            # Shared button component
+|-- src/
+|   |-- lib/questions.ts         # Question data loader
+|   |-- realtime/events.ts       # Typed Socket.IO event contracts
+|   |-- server/
+|   |   |-- realtimeServer.ts    # Socket.IO handlers and game-flow guards
+|   |   `-- mockSessionStore.ts  # Session state, scoring, buzz-in and reflection logic
+|   `-- store/gameStore.ts       # Client socket connection and Zustand store
+|-- docs/
+|   |-- README.md
+|   |-- portfolio-case-study.md
+|   |-- architecture.md
+|   |-- demo-guide.md
+|   `-- deployment.md
+|-- server.ts                    # Custom Next.js + Socket.IO server entry
+|-- mockQuestions_with_penalty.json
+|-- S__4063236.jpg               # Mobile entry artwork
+|-- render.yaml                  # Render deployment config
+|-- .env.example                 # Optional Redis env example
+`-- package.json
 ```
+
+## Responsive Behavior
+
+The entry page uses Tailwind CSS responsive utilities in `app/page.tsx` to decide what players see.
+
+- Mobile view: elements with `md:hidden` are shown below Tailwind's `md` breakpoint, which is `768px` by default. This view shows the full-screen event artwork first, then a Chinese room-entry form after the player taps the image CTA.
+- Desktop view: elements with `hidden md:block` are hidden on mobile and shown at `768px` and above. This view shows the portfolio-style landing page and a desktop test join form.
+- Shared gameplay: after joining a room, both mobile and desktop enter the same realtime flow in `app/session/page.tsx`.
+
+This is viewport-width based detection, not user-agent detection. Resizing a desktop browser below `768px` will show the mobile entry flow.
 
 ## Setup / Install
 
