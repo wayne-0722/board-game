@@ -16,6 +16,29 @@ const highlights = [
 
 const flowSteps = ["Join room", "Sync turn", "Answer", "Buzz", "Score"];
 
+const joinCopy = {
+  en: {
+    eyebrow: "Join Room",
+    title: "Enter a live tabletop session.",
+    description: "Use a two-digit room code. No app installation is required.",
+    playerName: "Player name",
+    playerPlaceholder: "Player",
+    roomCode: "Room code",
+    join: "Join Session",
+    resume: "Resume Room"
+  },
+  zh: {
+    eyebrow: "加入房間",
+    title: "輸入房號後加入同一場遊戲。",
+    description: "請輸入 2 位數房號，不需要安裝 App，手機瀏覽器即可參加。",
+    playerName: "玩家名稱",
+    playerPlaceholder: "玩家",
+    roomCode: "房號",
+    join: "加入房間",
+    resume: "回到房間"
+  }
+};
+
 export default function HomePage() {
   const router = useRouter();
   const savedCode = useGameStore((state) => state.sessionCode);
@@ -33,7 +56,7 @@ export default function HomePage() {
     const trimmedName = nameInput.trim();
 
     if (!/^\d{2}$/.test(trimmedCode)) {
-      showToast("Enter a 2-digit room code.");
+      showToast("請輸入 2 位數房號。");
       return;
     }
 
@@ -43,7 +66,7 @@ export default function HomePage() {
       await joinSession(trimmedCode, trimmedName);
       router.push("/session");
     } catch (error: any) {
-      showToast(error?.message || "Failed to join room.");
+      showToast(error?.message || "加入房間失敗。");
     }
   };
 
@@ -101,6 +124,7 @@ export default function HomePage() {
         onJoin={handleJoin}
         onResume={() => router.push("/session")}
         savedCode={savedCode}
+        locale="zh"
       />
     </main>
   );
@@ -214,6 +238,7 @@ function DesktopPortfolio({
               onJoin={onJoin}
               onResume={onResume}
               savedCode={savedCode}
+              locale="en"
             />
           </div>
         </section>
@@ -229,7 +254,8 @@ function JoinPanel({
   onNameInputChange,
   onJoin,
   onResume,
-  savedCode
+  savedCode,
+  locale
 }: {
   inputCode: string;
   nameInput: string;
@@ -238,33 +264,36 @@ function JoinPanel({
   onJoin: () => void;
   onResume: () => void;
   savedCode: string;
+  locale: keyof typeof joinCopy;
 }) {
+  const copy = joinCopy[locale];
+
   return (
     <section className="mx-auto max-w-md overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-[0_24px_70px_rgba(15,23,42,0.18)] backdrop-blur">
       <div className="bg-gradient-to-r from-emerald-900 via-emerald-700 to-amber-500 p-6 text-white">
-        <div className="text-sm font-bold uppercase tracking-[0.25em] text-white/75">Join Room</div>
+        <div className="text-sm font-bold uppercase tracking-[0.25em] text-white/75">{copy.eyebrow}</div>
         <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight">
-          Enter a live tabletop session.
+          {copy.title}
         </h2>
         <p className="mt-3 text-sm leading-6 text-white/80">
-          Use a two-digit room code. No app installation is required.
+          {copy.description}
         </p>
       </div>
 
       <div className="space-y-4 p-6">
         <label className="block space-y-2">
-          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Player name</div>
+          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{copy.playerName}</div>
           <input
             value={nameInput}
             onChange={(event) => onNameInputChange(event.target.value)}
-            placeholder="Player"
+            placeholder={copy.playerPlaceholder}
             maxLength={18}
             className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-lg font-bold text-slate-900 outline-none transition focus:border-emerald-700 focus:ring-2 focus:ring-emerald-200"
           />
         </label>
 
         <label className="block space-y-2">
-          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">Room code</div>
+          <div className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{copy.roomCode}</div>
           <input
             value={inputCode}
             onChange={(event) => onInputCodeChange(event.target.value.replace(/\D/g, "").slice(0, 2))}
@@ -276,12 +305,12 @@ function JoinPanel({
         </label>
 
         <Button onClick={onJoin} className="h-16 rounded-2xl text-xl font-black">
-          Join Session
+          {copy.join}
         </Button>
 
         {savedCode && (
           <Button variant="secondary" onClick={onResume} className="h-14 rounded-2xl">
-            Resume Room {savedCode}
+            {copy.resume} {savedCode}
           </Button>
         )}
       </div>
