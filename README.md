@@ -1,34 +1,58 @@
-# Board Turn Mock
+# Board Game Answer System
 
-Socket.IO based Next.js 14 prototype for a turn-based anti-fraud quiz flow.
+桌遊硬體配套的即時答題與計分系統。玩家使用手機瀏覽器加入同一場活動，系統負責房間同步、題目顯示、答題判定、錯答搶答、分數更新與回合推進。
 
-## Scripts
+## Tech Stack
 
-- `npm install`
-- `npm run dev` starts the custom server with Next.js and Socket.IO
-- `npm run build` builds the Next.js app
-- `npm start` starts the production server
+- Next.js 14 + React + TypeScript
+- Tailwind CSS
+- Zustand client state
+- Socket.IO realtime sync
+- Node.js custom server
+- In-memory session store, with optional Redis support via `REDIS_URL`
+- Render Web Service deployment
 
-## Routes
+## Main Flow
 
-- `/` join a room with a 2-digit session code
-- `/session` unified room flow for lobby, play, question, and reflection
-- `/lobby`, `/play`, `/question`, `/reflect` redirect to `/session`
+1. 玩家進入 `/`，手機版顯示活動入口圖，電腦版直接顯示測試/加入頁。
+2. 玩家輸入房號加入活動。
+3. `/session` 統一處理 lobby、答題、搶答、反思與結算流程。
+4. Socket.IO 將 session state 推送給同房間玩家。
+5. 錯答時開啟搶答視窗，避免原答題者直接跳過搶答流程。
 
-## Realtime flow
+## Project Structure
 
-- Server entry: `server.ts`
-- Socket.IO server: `src/server/realtimeServer.ts`
-- Session state: `src/server/mockSessionStore.ts`
-- Client store: `src/store/gameStore.ts`
+- `server.ts` - custom Next.js + Socket.IO server entry
+- `src/server/realtimeServer.ts` - realtime event handling and game flow guards
+- `src/server/mockSessionStore.ts` - session state, scoring, buzz and reflection logic
+- `src/store/gameStore.ts` - client socket connection and Zustand store
+- `app/page.tsx` - join entry page
+- `app/session/page.tsx` - unified gameplay page
+- `src/lib/questions.ts` - question loader
+- `mockQuestions_with_penalty.json` - question data
+- `docs/board-game-answer-system-report.md` - portfolio technical report
 
-## LAN usage
+## Local Development
 
-- The server binds to `0.0.0.0:3000`
-- Devices on the same LAN can open `http://<host-ip>:3000`
-- Example on this machine: `http://192.168.0.102:3000`
+```bash
+npm install
+npm run dev
+```
 
-## Notes
+The development server binds to `0.0.0.0:3000`, so mobile devices on the same LAN can open `http://<host-ip>:3000`.
 
-- Legacy HTTP API backups are stored under `legacy_disabled/`
-- Mock questions live in `src/lib/questions.ts` and `mockQuestions_with_penalty.json`
+## Production
+
+```bash
+npm run build
+npm start
+```
+
+Render can use:
+
+- Build command: `npm ci && npm run build`
+- Start command: `npm start`
+- Environment: Node 20
+- Optional env var: `REDIS_URL`, only needed if session persistence or multiple instances are required
+
+For a single short event without data retention, one Render instance with in-memory session state is enough. Do not scale to multiple instances unless Redis and a Socket.IO adapter are added.

@@ -469,7 +469,7 @@ export const useGameStore = create<GameStore>()(
       clearToast: () => set({ toast: null })
     }),
     {
-      name: "board-turn-mock",
+      name: "board-game-answer-system",
       storage: createJSONStorage(getStorage),
       partialize: (state) => ({
         sessionCode: state.sessionCode,

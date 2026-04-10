@@ -2,8 +2,8 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Board Turn Mock",
-  description: "Mobile-first turn-based quiz flow prototype"
+  title: "Board Game Answer System",
+  description: "Mobile-first realtime answer system for a physical board game"
 };
 
 export default function RootLayout({
