@@ -73,8 +73,8 @@ The project is designed for short live events with around 100 players and no lon
 
 The entry page uses Tailwind CSS responsive utilities in `app/page.tsx` to decide what players see.
 
-- Mobile view: elements with `md:hidden` are shown below Tailwind's `md` breakpoint, which is `768px` by default. This view shows the full-screen event artwork first, then a Chinese room-entry form after the player taps the image CTA.
-- Desktop view: elements with `hidden md:block` are hidden on mobile and shown at `768px` and above. This view shows the portfolio-style landing page and a desktop test join form.
+- Mobile view: elements with `md:hidden` are shown below Tailwind's `md` breakpoint, which is `768px` by default. This view is the client/player-facing flow: it shows the full-screen event artwork first, then a Chinese room-entry form after the player taps the image CTA. It intentionally does not include portfolio or technical explanation content.
+- Desktop view: elements with `hidden md:block` are hidden on mobile and shown at `768px` and above. This view is for portfolio review and testing, so it includes the technical positioning, demo highlights and a desktop test join form.
 - Shared gameplay: after joining a room, both mobile and desktop enter the same realtime flow in `app/session/page.tsx`.
 
 This is viewport-width based detection, not user-agent detection. Resizing a desktop browser below `768px` will show the mobile entry flow.
