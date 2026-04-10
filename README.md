@@ -42,7 +42,15 @@ Live demo: https://board-game-oclb.onrender.com
 - `app/session/page.tsx` - unified gameplay screen.
 - `src/lib/questions.ts` - question loader.
 - `mockQuestions_with_penalty.json` - question data.
-- `docs/board-game-answer-system-report.md` - portfolio technical report.
+- `.env.example` - optional Redis environment variable example.
+- `docs/` - portfolio case study, architecture, demo guide and deployment notes.
+
+## Documentation
+
+- `docs/portfolio-case-study.md` - case study for portfolio review.
+- `docs/architecture.md` - system architecture and realtime flow.
+- `docs/demo-guide.md` - live demo script and presentation notes.
+- `docs/deployment.md` - Render deployment settings and scaling notes.
 
 ## Local Development
 
