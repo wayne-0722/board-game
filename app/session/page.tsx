@@ -108,8 +108,8 @@ export default function SessionPage() {
     [store.players]
   );
   const reflectionRanking = useMemo(
-    () =>
-      store.players
+    () => {
+      const sorted = store.players
         .filter((player) => store.reflectionStats[player.id])
         .map((player) => ({ player, ...store.reflectionStats[player.id] }))
         .sort(
@@ -117,7 +117,19 @@ export default function SessionPage() {
             b.correctCount - a.correctCount ||
             a.totalTime - b.totalTime ||
             a.player.seatNumber - b.player.seatNumber
-        ),
+        );
+
+      let previousCorrectCount: number | null = null;
+      let previousRank = 0;
+
+      return sorted.map((entry, index) => {
+        const rank =
+          previousCorrectCount === entry.correctCount ? previousRank : index + 1;
+        previousCorrectCount = entry.correctCount;
+        previousRank = rank;
+        return { ...entry, rank };
+      });
+    },
     [store.players, store.reflectionStats]
   );
 
@@ -480,7 +492,7 @@ export default function SessionPage() {
                 className="flex justify-between rounded-xl border border-slate-200 px-4 py-3 text-sm"
               >
                 <span>
-                  #{index + 1} {entry.player.name}
+                  #{entry.rank} {entry.player.name}
                 </span>
                 <span>{entry.correctCount} \u984c</span>
               </div>
