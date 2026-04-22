@@ -485,8 +485,7 @@ export const initRealtimeServer = (server: HttpServer) => {
         const result = await submitReflectionStats({
           sessionCode: payload.sessionCode,
           playerId: actorId,
-          answers: payload.answers,
-          totalTime: payload.totalTime
+          answers: payload.answers
         });
         await broadcastSession(result.session.code);
         ack(result.error ? fail(result.error) : ok());

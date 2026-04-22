@@ -11,7 +11,7 @@ type Player = {
 
 type GameState = "LOBBY" | "TURN_ACTIVE" | "QUESTION_ACTIVE" | "FINISHED";
 type AnswerResult = { selectedIndices: number[]; isCorrect: boolean; playerId?: string };
-type ReflectionStats = Record<string, { totalTime: number; correctCount: number }>;
+type ReflectionStats = Record<string, { correctCount: number }>;
 type ReflectionStartTimes = Record<string, number>;
 type ReflectionDisconnectedAt = Record<string, number>;
 
@@ -773,13 +773,11 @@ export const excludeReflectionParticipant = async (sessionCode: string, playerId
 export const submitReflectionStats = async ({
   sessionCode,
   playerId,
-  answers,
-  totalTime
+  answers
 }: {
   sessionCode: string;
   playerId: string;
   answers: Record<string, number[]>;
-  totalTime?: number;
 }) => {
   const session = await getSession(sessionCode);
   const player = session.players.find((entry) => entry.id === playerId);
@@ -825,7 +823,6 @@ export const submitReflectionStats = async ({
 
   session.reflectionStats = session.reflectionStats || {};
   session.reflectionStats[playerId] = {
-    totalTime: Math.max(0, Math.round(totalTime || 0)),
     correctCount: Math.max(0, Math.round(correctCount))
   };
   delete session.reflectionDisconnectedAt[playerId];
@@ -863,7 +860,6 @@ export const settleReflection = async (sessionCode: string) => {
   const leaderboard = Object.entries(session.reflectionStats)
     .map(([playerId, stats]) => ({
       playerId,
-      totalTime: stats.totalTime,
       correctCount: stats.correctCount,
       player: session.players.find((player) => player.id === playerId)
     }))

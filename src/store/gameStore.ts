@@ -175,7 +175,7 @@ type GameStore = {
   buzzReadyAt: number | null;
   buzzWinnerId: string | null;
   paidBuzzUsedIds: string[];
-  reflectionStats: Record<string, { totalTime: number; correctCount: number }>;
+  reflectionStats: Record<string, { correctCount: number }>;
   hasStartedReflection: boolean;
   hasDeclinedReflection: boolean;
   reflectionSettled: boolean;
@@ -199,7 +199,7 @@ type GameStore = {
   buzzIn: () => Promise<void>;
   startReflection: () => Promise<void>;
   skipReflection: () => Promise<void>;
-  submitReflection: (payload: { answers: Record<string, number[]>; totalTime?: number }) => Promise<void>;
+  submitReflection: (payload: { answers: Record<string, number[]> }) => Promise<void>;
   settleReflection: () => Promise<void>;
   confirmReflectionExit: () => Promise<void>;
   voteEndGame: () => Promise<void>;
@@ -412,10 +412,10 @@ export const useGameStore = create<GameStore>()(
         await emitWithAck("skip_reflection", { sessionCode, playerId });
       },
 
-      submitReflection: async ({ answers, totalTime }) => {
+      submitReflection: async ({ answers }) => {
         const { sessionCode, playerId } = get();
         if (!sessionCode || !playerId) return;
-        await emitWithAck("submit_reflection", { sessionCode, playerId, answers, totalTime });
+        await emitWithAck("submit_reflection", { sessionCode, playerId, answers });
         get().showToast("\u53cd\u601d\u4f5c\u7b54\u5df2\u9001\u51fa\u3002");
       },
 

@@ -115,7 +115,6 @@ export default function SessionPage() {
         .sort(
           (a, b) =>
             b.correctCount - a.correctCount ||
-            a.totalTime - b.totalTime ||
             a.player.seatNumber - b.player.seatNumber
         );
 
@@ -453,12 +452,7 @@ export default function SessionPage() {
                   </Button>
                 ) : (
                   <Button
-                    onClick={() =>
-                      void store.submitReflection({
-                        answers: reflectionAnswers,
-                        totalTime: 0
-                      })
-                    }
+                    onClick={() => void store.submitReflection({ answers: reflectionAnswers })}
                   >
                     \u9001\u51fa\u53cd\u601d
                   </Button>

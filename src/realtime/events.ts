@@ -54,7 +54,6 @@ export type SubmitReflectionPayload = {
   sessionCode: string;
   playerId: string;
   answers: Record<string, number[]>;
-  totalTime?: number;
 };
 
 export type SkipReflectionPayload = {
