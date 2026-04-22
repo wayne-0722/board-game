@@ -29,19 +29,20 @@ type RawQuestion = {
 };
 
 const difficultyLabels: Record<string, string> = {
-  easy: "易",
-  low_medium: "中低",
-  medium: "中",
-  medium_high: "中高",
-  high: "中高",
-  hard: "難",
-  mediumlow: "中低",
-  mediumhigh: "中高",
-  易: "易",
-  中低: "中低",
-  中: "中",
-  中高: "中高",
-  難: "難"
+  easy: "\u7c21\u55ae",
+  low_medium: "\u4e2d\u4f4e",
+  medium: "\u4e2d\u7b49",
+  medium_high: "\u4e2d\u9ad8",
+  high: "\u9ad8",
+  hard: "\u56f0\u96e3",
+  mediumlow: "\u4e2d\u4f4e",
+  mediumhigh: "\u4e2d\u9ad8",
+  "\u7c21\u55ae": "\u7c21\u55ae",
+  "\u4e2d\u4f4e": "\u4e2d\u4f4e",
+  "\u4e2d\u7b49": "\u4e2d\u7b49",
+  "\u4e2d\u9ad8": "\u4e2d\u9ad8",
+  "\u9ad8": "\u9ad8",
+  "\u56f0\u96e3": "\u56f0\u96e3"
 };
 
 const difficultyStakes: Record<string, number> = {
@@ -53,11 +54,12 @@ const difficultyStakes: Record<string, number> = {
   hard: 700000,
   mediumlow: 300000,
   mediumhigh: 600000,
-  易: 100000,
-  中低: 300000,
-  中: 500000,
-  中高: 600000,
-  難: 700000
+  "\u7c21\u55ae": 100000,
+  "\u4e2d\u4f4e": 300000,
+  "\u4e2d\u7b49": 500000,
+  "\u4e2d\u9ad8": 600000,
+  "\u9ad8": 600000,
+  "\u56f0\u96e3": 700000
 };
 
 const normalizeDifficulty = (value: string) => {

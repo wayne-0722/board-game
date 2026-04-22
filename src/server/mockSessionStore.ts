@@ -265,7 +265,7 @@ export const joinSession = async ({
 }) => {
   const code = sessionCode.trim().toUpperCase();
   if (!/^\d{2}$/.test(code)) {
-    throw new Error("房號必須是 2 位數字");
+    throw new Error("\u623f\u865f\u5fc5\u9808\u662f 2 \u78bc\u6578\u5b57\u3002");
   }
   const session = await getSession(code);
   const auth = await loadSessionAuth(code);
@@ -282,7 +282,7 @@ export const joinSession = async ({
   }
 
   if (session.gameState !== "LOBBY") {
-    throw new Error("遊戲已開始，無法加入新玩家");
+    throw new Error("\u904a\u6232\u5df2\u958b\u59cb\uff0c\u7121\u6cd5\u518d\u52a0\u5165\u623f\u9593\u3002");
   }
 
   const seatNumber = session.players.length + 1;
@@ -291,7 +291,7 @@ export const joinSession = async ({
   const newPlayer: Player = {
     id: newId,
     seatNumber,
-    name: playerName || `玩家 ${seatNumber}`,
+    name: playerName || `\u73a9\u5bb6 ${seatNumber}`,
     confirmed: false,
     chips: defaultChips
   };
@@ -332,7 +332,8 @@ export const startGame = async (sessionCode: string) => {
   if (!allConfirmed) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "至少需要 2 位玩家，且所有玩家都完成準備才能開始遊戲"
+      error:
+        "\u81f3\u5c11\u9700\u8981 2 \u540d\u73a9\u5bb6\uff0c\u4e14\u6240\u6709\u73a9\u5bb6\u90fd\u8981\u5148\u78ba\u8a8d\u5ea7\u4f4d\u624d\u80fd\u958b\u59cb\u3002"
     };
   }
 
@@ -384,11 +385,12 @@ const getStake = (question: Question | null) => {
     mediumhigh: 600000,
     high: 600000,
     hard: 700000,
-    易: 100000,
-    中低: 300000,
-    中: 500000,
-    中高: 600000,
-    難: 700000
+    "\u7c21\u55ae": 100000,
+    "\u4e2d\u4f4e": 300000,
+    "\u4e2d\u7b49": 500000,
+    "\u4e2d\u9ad8": 600000,
+    "\u9ad8": 600000,
+    "\u56f0\u96e3": 700000
   };
   const mapped =
     byDifficulty[raw] ??
@@ -446,7 +448,11 @@ export const startQuestion = async (sessionCode: string) => {
   }
   if (session.questionLock && !session.currentQuestion) {
     session.questionLock = false;
-    return { session: await saveSession(touchSession(session)), error: "題目狀態異常，已解除鎖定" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error:
+        "\u984c\u76ee\u72c0\u614b\u7570\u5e38\uff0c\u5df2\u91cd\u7f6e\u70ba\u53ef\u4ee5\u91cd\u65b0\u62bd\u984c\u3002"
+    };
   }
 
   session.usedQuestionIds = Array.from(new Set(session.usedQuestionIds));
@@ -462,7 +468,7 @@ export const startQuestion = async (sessionCode: string) => {
     syncDerivedSessionFields(session);
     return {
       session: await saveSession(touchSession(session)),
-      error: "題庫已用完，遊戲進入反思階段"
+      error: "\u984c\u5eab\u5df2\u7d93\u62bd\u5b8c\uff0c\u904a\u6232\u7d50\u675f\u4e26\u53ef\u9032\u5165\u53cd\u601d\u3002"
     };
   }
 
@@ -491,7 +497,10 @@ export const submitAnswer = async ({
   const session = await getSession(sessionCode);
   if (!session.currentQuestion) {
     session.questionLock = false;
-    return { session: await saveSession(touchSession(session)), error: "目前沒有可作答的題目" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u76ee\u524d\u6c92\u6709\u9032\u884c\u4e2d\u7684\u984c\u76ee\u3002"
+    };
   }
 
   const responderId = session.activeResponderId || session.currentPlayerId || undefined;
@@ -624,15 +633,18 @@ export const buzzIn = async ({
   const now = Date.now();
   const buzzer = session.players.find((player) => player.id === playerId);
   if (!buzzer) {
-    return { session: await saveSession(touchSession(session)), error: "找不到玩家" };
+    return { session: await saveSession(touchSession(session)), error: "\u627e\u4e0d\u5230\u73a9\u5bb6\u3002" };
   }
   if (!session.currentQuestion || !session.buzzOpen) {
-    return { session: await saveSession(touchSession(session)), error: "目前不能搶答" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u76ee\u524d\u4e0d\u5728\u53ef\u640d\u7b54\u72c0\u614b\u3002"
+    };
   }
   if (session.lastWrongResponderId === playerId) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "原本答題者不能參與這次搶答"
+      error: "\u524d\u4e00\u4f4d\u7b54\u932f\u7684\u73a9\u5bb6\u4e0d\u80fd\u53c3\u8207\u640d\u7b54\u3002"
     };
   }
   if (
@@ -642,29 +654,32 @@ export const buzzIn = async ({
   ) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "原本答題者不能參與這次搶答"
+      error: "\u524d\u4e00\u4f4d\u7b54\u932f\u7684\u73a9\u5bb6\u4e0d\u80fd\u53c3\u8207\u640d\u7b54\u3002"
     };
   }
   if (session.paidBuzzUsedIds.includes(playerId)) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "你已經使用過這次搶答"
+      error: "\u4f60\u5df2\u7d93\u53c3\u52a0\u904e\u9019\u984c\u7684\u640d\u7b54\u3002"
     };
   }
   if (buzzer.chips < paidBuzzFee) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "籌碼不足，無法付費搶答"
+      error: "\u7c4c\u78bc\u4e0d\u8db3\uff0c\u7121\u6cd5\u652f\u4ed8\u640d\u7b54\u8cbb\u7528\u3002"
     };
   }
   if (!session.buzzReadyAt || now > session.buzzReadyAt) {
     session.buzzOpen = false;
-    return { session: await saveSession(touchSession(session)), error: "搶答時間已結束" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u640d\u7b54\u6642\u9593\u5df2\u7d50\u675f\u3002"
+    };
   }
   if (session.buzzWinnerId) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "已有其他玩家搶答成功"
+      error: "\u9019\u984c\u5df2\u7d93\u6709\u5176\u4ed6\u73a9\u5bb6\u640d\u7b54\u6210\u529f\u3002"
     };
   }
 
@@ -681,22 +696,31 @@ export const startReflection = async (sessionCode: string, playerId: string) => 
   const session = await getSession(sessionCode);
   const playerExists = session.players.some((player) => player.id === playerId);
   if (!playerExists) {
-    return { session: await saveSession(touchSession(session)), error: "找不到玩家" };
+    return { session: await saveSession(touchSession(session)), error: "\u627e\u4e0d\u5230\u73a9\u5bb6\u3002" };
   }
   if (session.reflectionSettled) {
-    return { session: await saveSession(touchSession(session)), error: "反思獎勵已經結算" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u53cd\u601d\u7d50\u7b97\u5df2\u5b8c\u6210\u3002"
+    };
   }
   if (session.reflectionExcludedIds.includes(playerId)) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "你已被排除在本次反思統計之外"
+      error: "\u4f60\u5df2\u88ab\u79fb\u51fa\u53cd\u601d\u53c3\u8207\u540d\u55ae\u3002"
     };
   }
   if (session.reflectionDeclinedIds.includes(playerId)) {
-    return { session: await saveSession(touchSession(session)), error: "你已選擇不參加反思" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u4f60\u5df2\u9078\u64c7\u7565\u904e\u53cd\u601d\u3002"
+    };
   }
   if (session.reflectionStats[playerId]) {
-    return { session: await saveSession(touchSession(session)), error: "你已經完成反思作答" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u4f60\u5df2\u7d93\u5b8c\u6210\u53cd\u601d\u4f5c\u7b54\u3002"
+    };
   }
   delete session.reflectionDisconnectedAt[playerId];
   session.reflectionDeclinedIds = session.reflectionDeclinedIds.filter((id) => id !== playerId);
@@ -708,13 +732,19 @@ export const skipReflection = async (sessionCode: string, playerId: string) => {
   const session = await getSession(sessionCode);
   const playerExists = session.players.some((player) => player.id === playerId);
   if (!playerExists) {
-    return { session: await saveSession(touchSession(session)), error: "找不到玩家" };
+    return { session: await saveSession(touchSession(session)), error: "\u627e\u4e0d\u5230\u73a9\u5bb6\u3002" };
   }
   if (session.reflectionSettled) {
-    return { session: await saveSession(touchSession(session)), error: "反思獎勵已經結算" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u53cd\u601d\u7d50\u7b97\u5df2\u5b8c\u6210\u3002"
+    };
   }
   if (session.reflectionStats[playerId]) {
-    return { session: await saveSession(touchSession(session)), error: "你已經完成反思作答" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u4f60\u5df2\u7d93\u5b8c\u6210\u53cd\u601d\u4f5c\u7b54\u3002"
+    };
   }
   session.reflectionDeclinedIds = Array.from(
     new Set([...(session.reflectionDeclinedIds || []), playerId])
@@ -754,22 +784,31 @@ export const submitReflectionStats = async ({
   const session = await getSession(sessionCode);
   const player = session.players.find((entry) => entry.id === playerId);
   if (!player) {
-    return { session: await saveSession(touchSession(session)), error: "找不到玩家" };
+    return { session: await saveSession(touchSession(session)), error: "\u627e\u4e0d\u5230\u73a9\u5bb6\u3002" };
   }
   if (session.reflectionSettled) {
-    return { session: await saveSession(touchSession(session)), error: "反思獎勵已經結算" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u53cd\u601d\u7d50\u7b97\u5df2\u5b8c\u6210\u3002"
+    };
   }
   if (session.reflectionExcludedIds.includes(playerId)) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "你已被排除在本次反思統計之外"
+      error: "\u4f60\u5df2\u88ab\u79fb\u51fa\u53cd\u601d\u53c3\u8207\u540d\u55ae\u3002"
     };
   }
   if (session.reflectionStats[playerId]) {
-    return { session: await saveSession(touchSession(session)), error: "你已經提交過反思答案" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u4f60\u5df2\u7d93\u9001\u51fa\u53cd\u601d\u4f5c\u7b54\u3002"
+    };
   }
   if (!session.reflectionStartTimes[playerId]) {
-    return { session: await saveSession(touchSession(session)), error: "你尚未選擇參加反思" };
+    return {
+      session: await saveSession(touchSession(session)),
+      error: "\u4f60\u9084\u6c92\u6709\u958b\u59cb\u53cd\u601d\u4f5c\u7b54\u3002"
+    };
   }
 
   const safeAnswers = answers || {};
@@ -808,7 +847,7 @@ export const settleReflection = async (sessionCode: string) => {
     return {
       session: await saveSession(touchSession(session)),
       leaderboard: [],
-      error: "目前沒有可結算的反思參與者"
+      error: "\u76ee\u524d\u6c92\u6709\u4efb\u4f55\u53cd\u601d\u53c3\u8207\u8005\u3002"
     };
   }
 
@@ -817,7 +856,7 @@ export const settleReflection = async (sessionCode: string) => {
     return {
       session: await saveSession(touchSession(session)),
       leaderboard: [],
-      error: "仍有參與反思的玩家尚未提交答案"
+      error: "\u4ecd\u6709\u53c3\u8207\u8005\u5c1a\u672a\u9001\u51fa\u53cd\u601d\u7b54\u6848\u3002"
     };
   }
 
@@ -874,7 +913,7 @@ export const settleReflection = async (sessionCode: string) => {
 export const voteEndGame = async (sessionCode: string, playerId: string) => {
   const session = await getSession(sessionCode);
   if (!session.players.some((player) => player.id === playerId)) {
-    return { session: await saveSession(touchSession(session)), error: "找不到玩家" };
+    return { session: await saveSession(touchSession(session)), error: "\u627e\u4e0d\u5230\u73a9\u5bb6\u3002" };
   }
   const threshold = session.endVoteThreshold;
 
@@ -883,7 +922,8 @@ export const voteEndGame = async (sessionCode: string, playerId: string) => {
       session: await saveSession(touchSession(session)),
       endVotes: session.endVotes || [],
       threshold,
-      error: "尚未有玩家達到 300 萬，暫時不能發起結束投票"
+      error:
+        "\u76ee\u524d\u9084\u6c92\u6709\u73a9\u5bb6\u9054\u5230 300 \u842c\u7c4c\u78bc\uff0c\u7121\u6cd5\u767c\u8d77\u7d50\u675f\u6295\u7968\u3002"
     };
   }
 

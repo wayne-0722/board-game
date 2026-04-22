@@ -78,7 +78,9 @@ const getSocket = () => {
   });
 
   socket.on("session_expired", () => {
-    useGameStore.getState().resetSession("房間已失效，請重新加入。");
+    useGameStore.getState().resetSession(
+      "\u623f\u9593\u5df2\u5931\u6548\uff0c\u8acb\u91cd\u65b0\u8f38\u5165\u623f\u865f\u52a0\u5165\u3002"
+    );
   });
 
   return socket;
@@ -336,7 +338,7 @@ export const useGameStore = create<GameStore>()(
           sessionCode,
           playerId: String(result.data?.playerId || get().playerId || ""),
           playerToken: String(result.data?.playerToken || get().playerToken || ""),
-          playerName: playerName || get().playerName || "玩家"
+          playerName: playerName || get().playerName || "\u73a9\u5bb6"
         });
       },
 
@@ -354,14 +356,19 @@ export const useGameStore = create<GameStore>()(
             { suppressToast: true }
           );
         } catch (error: any) {
-          get().resetSession(error?.message || "房間已失效，請重新加入。");
+          get().resetSession(
+            error?.message ||
+              "\u623f\u9593\u5df2\u5931\u6548\uff0c\u8acb\u91cd\u65b0\u8f38\u5165\u623f\u865f\u52a0\u5165\u3002"
+          );
         }
       },
 
       confirmSeat: async () => {
         const { sessionCode, playerId, playerName } = get();
         if (!sessionCode || !playerId) {
-          get().showToast("請先加入房間");
+          get().showToast(
+            "\u8acb\u5148\u8f38\u5165\u623f\u865f\u4e26\u52a0\u5165\u623f\u9593\u3002"
+          );
           return;
         }
         await emitWithAck("confirm_seat", { sessionCode, playerId, playerName });
@@ -409,14 +416,14 @@ export const useGameStore = create<GameStore>()(
         const { sessionCode, playerId } = get();
         if (!sessionCode || !playerId) return;
         await emitWithAck("submit_reflection", { sessionCode, playerId, answers, totalTime });
-        get().showToast("反思答案已提交");
+        get().showToast("\u53cd\u601d\u4f5c\u7b54\u5df2\u9001\u51fa\u3002");
       },
 
       settleReflection: async () => {
         const { sessionCode } = get();
         if (!sessionCode) return;
         await emitWithAck("settle_reflection", { sessionCode });
-        get().showToast("反思結果已完成結算");
+        get().showToast("\u53cd\u601d\u6392\u540d\u5df2\u7d50\u7b97\u3002");
       },
 
       confirmReflectionExit: async () => {
@@ -427,7 +434,9 @@ export const useGameStore = create<GameStore>()(
           result.data?.exitVotes?.length || get().reflectionExitVotes.length
         );
         if (!result.data?.destroyed) {
-          get().showToast(`已確認返回首頁 (${currentVotes}/${reflectionExitThreshold})`);
+          get().showToast(
+            `\u5df2\u78ba\u8a8d\u96e2\u958b\u53cd\u601d\u9801\uff08${currentVotes}/${reflectionExitThreshold}\uff09`
+          );
         }
       },
 
@@ -437,9 +446,13 @@ export const useGameStore = create<GameStore>()(
         const result = await emitWithAck("vote_end", { sessionCode, playerId });
         const currentVotes = Number(result.data?.endVotes?.length || get().endVotes.length);
         if (get().gameState === "FINISHED") {
-          get().showToast("遊戲已結束，準備進入反思階段");
+          get().showToast(
+            "\u904a\u6232\u5df2\u7d50\u675f\uff0c\u53ef\u4ee5\u9032\u5165\u53cd\u601d\u7d50\u7b97\u3002"
+          );
         } else {
-          get().showToast(`已提交結束投票 (${currentVotes}/${endThreshold})`);
+          get().showToast(
+            `\u5df2\u9001\u51fa\u7d50\u675f\u6295\u7968\uff08${currentVotes}/${endThreshold}\uff09`
+          );
         }
       },
 
