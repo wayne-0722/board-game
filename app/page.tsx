@@ -17,19 +17,19 @@ const highlights = [
 const flowSteps = ["Join room", "Sync turn", "Answer", "Buzz", "Score"];
 
 const zh = {
-  enterAria: "\u9032\u5165\u7b54\u984c\u7cfb\u7d71",
-  invalidRoom: "\u8acb\u8f38\u5165 2 \u4f4d\u6578\u623f\u865f\u3002",
-  joinFailed: "\u52a0\u5165\u623f\u9593\u5931\u6557\u3002",
-  eyebrow: "\u52a0\u5165\u623f\u9593",
-  title: "\u8f38\u5165\u623f\u865f",
+  enterAria: "進入答題系統",
+  invalidRoom: "請輸入 2 位數房號。",
+  joinFailed: "加入房間失敗。",
+  eyebrow: "加入房間",
+  title: "輸入房號",
   description:
-    "\u8acb\u8f38\u5165\u73a9\u5bb6\u540d\u7a31\u8207 2 \u4f4d\u6578\u623f\u865f\uff0c\u624b\u6a5f\u700f\u89bd\u5668\u5373\u53ef\u53c3\u52a0\u3002",
-  playerName: "\u73a9\u5bb6\u540d\u7a31",
-  playerPlaceholder: "\u73a9\u5bb6",
-  roomCode: "\u623f\u865f",
-  join: "\u52a0\u5165\u623f\u9593",
-  resume: "\u56de\u5230\u623f\u9593",
-  back: "\u56de\u5230\u5165\u53e3"
+    "請輸入玩家名稱與 2 位數房號，手機瀏覽器即可參加。",
+  playerName: "玩家名稱",
+  playerPlaceholder: "玩家",
+  roomCode: "房號",
+  join: "加入房間",
+  resume: "回到房間",
+  back: "回到入口"
 };
 
 export default function HomePage() {

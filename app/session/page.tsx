@@ -8,12 +8,12 @@ import { mockQuestions } from "../../src/lib/questions";
 import { useGameStore } from "../../src/store/gameStore";
 
 const formatChips = (value: number) =>
-  `${Math.floor(value / 10000).toLocaleString()} \u842c`;
+  `${Math.floor(value / 10000).toLocaleString()} 萬`;
 
 const getTypeLabel = (type: "single" | "multi" | "boolean") => {
-  if (type === "multi") return "\u8907\u9078";
-  if (type === "boolean") return "\u662f\u975e";
-  return "\u55ae\u9078";
+  if (type === "multi") return "複選";
+  if (type === "boolean") return "是非";
+  return "單選";
 };
 
 export default function SessionPage() {
@@ -170,38 +170,38 @@ export default function SessionPage() {
       <section className="card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-sm text-slate-500">\u623f\u865f</div>
+            <div className="text-sm text-slate-500">房號</div>
             <div className="text-2xl font-bold">
-              {store.sessionCode || "\u672a\u52a0\u5165"}
+              {store.sessionCode || "未加入"}
             </div>
           </div>
           <div className="text-sm text-slate-600">
-            \u9023\u7dda\u72c0\u614b\uff1a{store.connectionStatus}
+            連線狀態：{store.connectionStatus}
           </div>
         </div>
       </section>
 
       {store.currentView === "LOBBY" && (
         <section className="card space-y-4 p-6">
-          <h1 className="text-2xl font-bold">\u7b49\u5f85\u5ba4</h1>
+          <h1 className="text-2xl font-bold">等待室</h1>
           <input
             value={nameInput}
             onChange={(event) => setNameInput(event.target.value)}
-            placeholder="\u8f38\u5165\u73a9\u5bb6\u540d\u7a31"
+            placeholder="輸入玩家名稱"
             className="w-full rounded-xl border border-slate-300 px-4 py-3"
           />
           <div className="grid gap-3 md:grid-cols-2">
             <Button
               onClick={async () => {
                 if (!nameInput.trim()) {
-                  store.showToast("\u8acb\u5148\u8f38\u5165\u73a9\u5bb6\u540d\u7a31");
+                  store.showToast("請先輸入玩家名稱");
                   return;
                 }
                 store.setPlayerName(nameInput.trim());
                 await store.confirmSeat();
               }}
             >
-              \u78ba\u8a8d\u5165\u5ea7
+              確認入座
             </Button>
             <Button
               variant="secondary"
@@ -213,7 +213,7 @@ export default function SessionPage() {
               }
               onClick={() => void store.startGame()}
             >
-              \u958b\u59cb\u904a\u6232
+              開始遊戲
             </Button>
           </div>
           <div className="space-y-2">
@@ -226,7 +226,7 @@ export default function SessionPage() {
                   P{player.seatNumber} {player.name}
                 </span>
                 <span>
-                  {player.confirmed ? "\u5df2\u5c31\u7dd2" : "\u672a\u5c31\u7dd2"}
+                  {player.confirmed ? "已就緒" : "未就緒"}
                 </span>
               </div>
             ))}
@@ -238,37 +238,37 @@ export default function SessionPage() {
         <section className="card space-y-4 p-6">
           <h1 className="text-2xl font-bold">
             {currentPlayer
-              ? `\u76ee\u524d\u56de\u5408\uff1a${currentPlayer.name}`
-              : "\u7b49\u5f85\u56de\u5408\u958b\u59cb"}
+              ? `目前回合：${currentPlayer.name}`
+              : "等待回合開始"}
           </h1>
           <div className="text-sm text-slate-600">
-            \u4f60\u7684\u7c4c\u78bc\uff1a{formatChips(me?.chips ?? 0)}
+            你的籌碼：{formatChips(me?.chips ?? 0)}
           </div>
 
           {store.questionLock && store.currentQuestion ? (
             <div className="rounded-xl bg-emerald-50 p-4 text-emerald-800">
-              \u984c\u76ee\u5df2\u7d93\u958b\u555f\uff0c\u8acb\u524d\u5f80\u7b54\u984c\u5340\u3002
+              題目已經開啟，請前往答題區。
             </div>
           ) : isTurnOwner ? (
             <div className="grid gap-3 md:grid-cols-2">
               <Button onClick={() => void store.startQuestion()}>
-                \u958b\u555f\u984c\u76ee
+                開啟題目
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => void store.advanceTurn()}
               >
-                \u63db\u4e0b\u4e00\u4f4d
+                換下一位
               </Button>
             </div>
           ) : (
             <div className="rounded-xl bg-slate-50 p-4 text-slate-700">
-              \u76ee\u524d\u4e0d\u662f\u4f60\u7684\u56de\u5408\u3002
+              目前不是你的回合。
             </div>
           )}
 
           <Button variant="secondary" onClick={() => void store.voteEndGame()}>
-            \u7d50\u675f\u904a\u6232\u6295\u7968 ({store.endVotes.length}/{store.endThreshold})
+            結束遊戲投票 ({store.endVotes.length}/{store.endThreshold})
           </Button>
 
           <div className="space-y-2">
@@ -327,14 +327,14 @@ export default function SessionPage() {
               }
               onClick={() => void store.submitAnswer(selectedAnswer)}
             >
-              \u9001\u51fa\u7b54\u6848
+              送出答案
             </Button>
             <Button
               variant="secondary"
               disabled={!isTurnOwner || Boolean(store.answerResult)}
               onClick={() => void store.forfeitQuestion()}
             >
-              \u8df3\u904e\u9019\u984c
+              跳過這題
             </Button>
           </div>
 
@@ -348,8 +348,8 @@ export default function SessionPage() {
             >
               <div className="text-xl font-bold">
                 {store.answerResult.isCorrect
-                  ? "\u7b54\u5c0d\u4e86"
-                  : "\u7b54\u932f\u4e86"}
+                  ? "答對了"
+                  : "答錯了"}
               </div>
               {currentQuestion.explanation ? (
                 <p className="mt-2 text-sm text-slate-700">
@@ -358,7 +358,7 @@ export default function SessionPage() {
               ) : null}
               {store.buzzOpen ? (
                 <p className="mt-2 text-sm text-slate-700">
-                  \u5df2\u958b\u555f\u640d\u7b54\u8996\u7a97\uff0c\u8acb\u7b49\u5f85\u7d50\u679c\u3002
+                  已開啟損答視窗，請等待結果。
                 </p>
               ) : null}
               {canAdvanceAfterAnswer ? (
@@ -367,11 +367,11 @@ export default function SessionPage() {
                     variant="secondary"
                     onClick={() =>
                       void store.advanceTurn({
-                        showToast: "\u5df2\u5207\u63db\u5230\u4e0b\u4e00\u4f4d"
+                        showToast: "已切換到下一位"
                       })
                     }
                   >
-                    \u63db\u4e0b\u4e00\u4f4d
+                    換下一位
                   </Button>
                 </div>
               ) : null}
@@ -380,12 +380,12 @@ export default function SessionPage() {
 
           <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
             <div>
-              \u56de\u5408\u73a9\u5bb6\uff1a
-              {currentPlayer ? currentPlayer.name : "\u672a\u6307\u5b9a"}
+              回合玩家：
+              {currentPlayer ? currentPlayer.name : "未指定"}
             </div>
             <div>
-              \u4f5c\u7b54\u63a7\u5236\uff1a
-              {currentResponder ? currentResponder.name : "\u5f85\u6307\u5b9a"}
+              作答控制：
+              {currentResponder ? currentResponder.name : "待指定"}
             </div>
           </div>
         </section>
@@ -393,17 +393,17 @@ export default function SessionPage() {
 
       {store.currentView === "REFLECT" && (
         <section className="card space-y-4 p-6">
-          <h1 className="text-2xl font-bold">\u53cd\u601d\u7d50\u7b97</h1>
+          <h1 className="text-2xl font-bold">反思結算</h1>
 
           {!store.hasStartedReflection &&
           !store.hasDeclinedReflection &&
           !store.reflectionStats[store.playerId] ? (
             <div className="grid gap-3 md:grid-cols-2">
               <Button onClick={() => void store.startReflection()}>
-                \u958b\u59cb\u53cd\u601d
+                開始反思
               </Button>
               <Button variant="secondary" onClick={() => void store.skipReflection()}>
-                \u7565\u904e\u53cd\u601d
+                略過反思
               </Button>
             </div>
           ) : null}
@@ -411,7 +411,7 @@ export default function SessionPage() {
           {!store.reflectionStats[store.playerId] && reflectionQuestion ? (
             <>
               <div className="text-sm text-slate-600">
-                \u984c\u76ee {reflectionIndex + 1} / {reflectionQuestions.length}
+                題目 {reflectionIndex + 1} / {reflectionQuestions.length}
               </div>
               <h2 className="text-xl font-semibold">{reflectionQuestion.text}</h2>
               <div className="space-y-3">
@@ -438,7 +438,7 @@ export default function SessionPage() {
                   disabled={reflectionIndex === 0}
                   onClick={() => setReflectionIndex((value) => Math.max(0, value - 1))}
                 >
-                  \u4e0a\u4e00\u984c
+                  上一題
                 </Button>
                 {reflectionIndex < reflectionQuestions.length - 1 ? (
                   <Button
@@ -448,13 +448,13 @@ export default function SessionPage() {
                       )
                     }
                   >
-                    \u4e0b\u4e00\u984c
+                    下一題
                   </Button>
                 ) : (
                   <Button
                     onClick={() => void store.submitReflection({ answers: reflectionAnswers })}
                   >
-                    \u9001\u51fa\u53cd\u601d
+                    送出反思
                   </Button>
                 )}
               </div>
@@ -464,7 +464,7 @@ export default function SessionPage() {
           <div className="grid gap-3 md:grid-cols-2">
             {!store.reflectionSettled ? (
               <Button onClick={() => void store.settleReflection()}>
-                \u7d50\u7b97\u53cd\u601d
+                結算反思
               </Button>
             ) : null}
             {store.reflectionSettled ? (
@@ -473,7 +473,7 @@ export default function SessionPage() {
                 disabled={store.reflectionExitVotes.includes(store.playerId)}
                 onClick={() => void store.confirmReflectionExit()}
               >
-                \u78ba\u8a8d\u96e2\u958b ({store.reflectionExitVotes.length}/
+                確認離開 ({store.reflectionExitVotes.length}/
                 {store.reflectionExitThreshold})
               </Button>
             ) : null}
@@ -488,7 +488,7 @@ export default function SessionPage() {
                 <span>
                   #{entry.rank} {entry.player.name}
                 </span>
-                <span>{entry.correctCount} \u984c</span>
+                <span>{entry.correctCount} 題</span>
               </div>
             ))}
           </div>
@@ -497,7 +497,7 @@ export default function SessionPage() {
 
       {!["LOBBY", "PLAY", "QUESTION", "REFLECT"].includes(store.currentView) ? (
         <section className="card p-6 text-slate-700">
-          \u6b63\u5728\u8f09\u5165\u904a\u6232\u72c0\u614b...
+          正在載入遊戲狀態...
         </section>
       ) : null}
 
@@ -508,30 +508,30 @@ export default function SessionPage() {
               Buzz
             </div>
             <div className="mt-3 text-4xl font-black text-rose-700">
-              \u640d\u7b54\u958b\u555f
+              損答開啟
             </div>
             <div className="mt-3 text-base text-slate-700">
-              \u5269\u9918{" "}
+              剩餘{" "}
               <span className="text-3xl font-black text-slate-950">
                 {buzzCountdown}
               </span>{" "}
-              \u79d2
+              秒
             </div>
             <p className="mt-3 text-sm text-slate-500">
-              \u640d\u7b54\u8996\u7a97\u70ba 10 \u79d2\uff0c\u640d\u7b54\u6210\u529f\u5f8c\u53ef\u7372\u5f97\u4f5c\u7b54\u6b0a\u3002
+              損答視窗為 10 秒，損答成功後可獲得作答權。
             </p>
 
             {isOriginalWrongResponder ? (
               <div className="mt-5 rounded-2xl bg-slate-100 px-4 py-4 text-sm text-slate-600">
-                \u4f60\u662f\u524d\u4e00\u4f4d\u7b54\u932f\u7684\u73a9\u5bb6\uff0c\u4e0d\u80fd\u53c3\u8207\u9019\u6b21\u640d\u7b54\u3002
+                你是前一位答錯的玩家，不能參與這次損答。
               </div>
             ) : store.buzzWinnerId === store.playerId ? (
               <div className="mt-5 rounded-2xl bg-emerald-50 px-4 py-4 text-sm font-semibold text-emerald-700">
-                \u4f60\u5df2\u640d\u7b54\u6210\u529f\uff0c\u8acb\u6e96\u5099\u4f5c\u7b54\u3002
+                你已損答成功，請準備作答。
               </div>
             ) : store.paidBuzzUsedIds.includes(store.playerId) ? (
               <div className="mt-5 rounded-2xl bg-slate-100 px-4 py-4 text-sm text-slate-600">
-                \u4f60\u5df2\u4f7f\u7528\u904e\u672c\u984c\u7684\u640d\u7b54\u6a5f\u6703\u3002
+                你已使用過本題的損答機會。
               </div>
             ) : (
               <div className="mt-5">
@@ -541,7 +541,7 @@ export default function SessionPage() {
                   disabled={!canBuzz}
                   onClick={() => void store.buzzIn()}
                 >
-                  \u6211\u8981\u640d\u7b54
+                  我要損答
                 </Button>
               </div>
             )}
