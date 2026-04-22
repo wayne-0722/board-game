@@ -638,13 +638,13 @@ export const buzzIn = async ({
   if (!session.currentQuestion || !session.buzzOpen) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "目前不在可損答狀態。"
+      error: "目前不在可搶答狀態。"
     };
   }
   if (session.lastWrongResponderId === playerId) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "前一位答錯的玩家不能參與損答。"
+      error: "前一位答錯的玩家不能參與搶答。"
     };
   }
   if (
@@ -654,32 +654,32 @@ export const buzzIn = async ({
   ) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "前一位答錯的玩家不能參與損答。"
+      error: "前一位答錯的玩家不能參與搶答。"
     };
   }
   if (session.paidBuzzUsedIds.includes(playerId)) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "你已經參加過這題的損答。"
+      error: "你已經參加過這題的搶答。"
     };
   }
   if (buzzer.chips < paidBuzzFee) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "籌碼不足，無法支付損答費用。"
+      error: "籌碼不足，無法支付搶答費用。"
     };
   }
   if (!session.buzzReadyAt || now > session.buzzReadyAt) {
     session.buzzOpen = false;
     return {
       session: await saveSession(touchSession(session)),
-      error: "損答時間已結束。"
+      error: "搶答時間已結束。"
     };
   }
   if (session.buzzWinnerId) {
     return {
       session: await saveSession(touchSession(session)),
-      error: "這題已經有其他玩家損答成功。"
+      error: "這題已經有其他玩家搶答成功。"
     };
   }
 

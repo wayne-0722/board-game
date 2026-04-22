@@ -358,7 +358,7 @@ export default function SessionPage() {
               ) : null}
               {store.buzzOpen ? (
                 <p className="mt-2 text-sm text-slate-700">
-                  已開啟損答視窗，請等待結果。
+                  已開啟搶答視窗，請等待結果。
                 </p>
               ) : null}
               {canAdvanceAfterAnswer ? (
@@ -508,7 +508,7 @@ export default function SessionPage() {
               Buzz
             </div>
             <div className="mt-3 text-4xl font-black text-rose-700">
-              損答開啟
+              搶答開啟
             </div>
             <div className="mt-3 text-base text-slate-700">
               剩餘{" "}
@@ -518,20 +518,20 @@ export default function SessionPage() {
               秒
             </div>
             <p className="mt-3 text-sm text-slate-500">
-              損答視窗為 10 秒，損答成功後可獲得作答權。
+              搶答視窗為 10 秒，搶答成功後可獲得作答權。
             </p>
 
             {isOriginalWrongResponder ? (
               <div className="mt-5 rounded-2xl bg-slate-100 px-4 py-4 text-sm text-slate-600">
-                你是前一位答錯的玩家，不能參與這次損答。
+                你是前一位答錯的玩家，不能參與這次搶答。
               </div>
             ) : store.buzzWinnerId === store.playerId ? (
               <div className="mt-5 rounded-2xl bg-emerald-50 px-4 py-4 text-sm font-semibold text-emerald-700">
-                你已損答成功，請準備作答。
+                你已搶答成功，請準備作答。
               </div>
             ) : store.paidBuzzUsedIds.includes(store.playerId) ? (
               <div className="mt-5 rounded-2xl bg-slate-100 px-4 py-4 text-sm text-slate-600">
-                你已使用過本題的損答機會。
+                你已使用過本題的搶答機會。
               </div>
             ) : (
               <div className="mt-5">
@@ -541,7 +541,7 @@ export default function SessionPage() {
                   disabled={!canBuzz}
                   onClick={() => void store.buzzIn()}
                 >
-                  我要損答
+                  我要搶答
                 </Button>
               </div>
             )}
